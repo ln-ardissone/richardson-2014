@@ -1,0 +1,64 @@
+#!/usr/bin/env Rscript
+#
+library(phyloseq)
+library(ggplot2)
+library(plyr)
+library(reshape2)
+
+FACTORS <- c('seroconverted')
+CUTS <- 8
+FORMULA <- ~ seroconverted + age_at_sampling
+TAX_RANK <- 'Phylum'
+
+se <- function(x) sd(x)/sqrt(length(x))
+
+load('dipp-rarefied-phyloseq.RData')
+
+dipp <- subset_samples(dipp, age_at_sampling <= 600)
+
+dipp.glom <- tax_glom(dipp, taxrank=TAX_RANK)
+
+meta <- data.frame(sam_data(dipp.glom))
+otus <- data.frame(t(otu_table(dipp.glom)), check.names=F)
+taxa <- data.frame(tax_table(dipp.glom))
+
+meta$group <- cut(meta$age_at_sampling,
+                  breaks=CUTS,
+                  labels=1:CUTS)
+
+vars <- all.vars(FORMULA)
+
+for (var in c(vars, 'code', 'group')) otus[,var] <- meta[,var]
+
+mdat <- melt(otus, c(vars, 'code', 'group'))
+
+smoothing_formula <- as.formula(paste('~',
+                                      FACTORS,
+                                      '+ group',
+                                      '+ variable'))
+
+averaged <- ddply(mdat, ~group+code+variable, function(x)
+  c(seroconverted=x$seroconverted[1],
+    age_at_sampling=mean(x$age_at_sampling),
+    varable=x$variable[1],
+    value=mean(x$value),
+    group=x$group[1])
+)
+
+
+smoothing_formula <- as.formula(paste('~',
+                                      FACTORS,
+                                      '+ group',
+                                      '+ variable'))
+
+smoothed <- ddply(averaged, smoothing_formula, function(x) {
+  c(age_at_sampling=mean(x$age_at_sampling), mean=mean(x$value), se=se(x$value))
+})
+
+smoothed$name <- taxa[smoothed$variable,][,TAX_RANK]
+
+ggplot(smoothed,
+       aes(x=as.integer(age_at_sampling), y=mean, fill=as.factor(seroconverted))) +
+facet_wrap(~name, scale='free_y') +
+geom_ribbon(aes(ymin=mean - se, ymax=mean + se), width=0, alpha=0.5) +
+scale_y_log10()

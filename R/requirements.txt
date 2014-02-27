@@ -1,0 +1,4 @@
+plyr
+phyloseq
+reshape2
+ggplot2
