@@ -57,8 +57,13 @@ smoothed <- ddply(averaged, smoothing_formula, function(x) {
 
 smoothed$name <- taxa[smoothed$variable,][,TAX_RANK]
 
-ggplot(smoothed,
+avg <- ddply(mdat, ~variable, function(x) c(mean=mean(x$value)))
+
+keep <- avg[with(avg, order(-mean)),][1:12,]$variable
+
+smoothed.keep <- smoothed[smoothed$variable %in% keep,]
+
+ggplot(smoothed.keep,
        aes(x=as.integer(age_at_sampling), y=mean, fill=as.factor(seroconverted))) +
 facet_wrap(~name, scale='free_y') +
-geom_ribbon(aes(ymin=mean - se, ymax=mean + se), width=0, alpha=0.5) +
-scale_y_log10()
+geom_ribbon(aes(ymin=mean - se, ymax=mean + se), width=0, alpha=0.5)
