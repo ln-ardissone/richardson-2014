@@ -10,9 +10,9 @@ source('./lib/load_dipp.R')
 
 phy <- load.dipp()
 
-keep <- subset_samples(phy, aa_count != 2)
+keep <- subset_samples(phy, aa_count != 1)
 keep <- subset_samples(keep, TechReps == FALSE | illumina_lane == 1)
 
-dipp <- rarefy_even_depth(keep, 10000)
+rf <- rarefy_even_depth(keep, 10000)
 
-save(dipp, file='dipp-rarefied-phyloseq.RData')
+save(rf, file='dipp-rarefied-phyloseq.RData')
