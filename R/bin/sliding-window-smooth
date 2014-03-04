@@ -8,15 +8,15 @@ library(reshape2)
 FACTORS <- c('seroconverted')
 CUTS <- 8
 FORMULA <- ~ seroconverted + age_at_sampling
-TAX_RANK <- 'Phylum'
+TAX_RANK <- 'Genus'
 
 se <- function(x) sd(x)/sqrt(length(x))
 
 load('dipp-rarefied-phyloseq.RData')
 
-dipp <- subset_samples(dipp, age_at_sampling <= 600)
+ss <- subset_samples(dipp, age_at_sampling <= 600)
 
-dipp.glom <- tax_glom(dipp, taxrank=TAX_RANK)
+dipp.glom <- tax_glom(ss, taxrank=TAX_RANK)
 
 meta <- data.frame(sam_data(dipp.glom))
 otus <- data.frame(t(otu_table(dipp.glom)), check.names=F)
@@ -28,16 +28,16 @@ meta$group <- cut(meta$age_at_sampling,
 
 vars <- all.vars(FORMULA)
 
-for (var in c(vars, 'code', 'group')) otus[,var] <- meta[,var]
+for (var in c(vars, 'dipp_person', 'group')) otus[,var] <- meta[,var]
 
-mdat <- melt(otus, c(vars, 'code', 'group'))
+mdat <- melt(otus, c(vars, 'dipp_person', 'group'))
 
 smoothing_formula <- as.formula(paste('~',
                                       FACTORS,
                                       '+ group',
                                       '+ variable'))
 
-averaged <- ddply(mdat, ~group+code+variable, function(x)
+averaged <- ddply(mdat, ~group+dipp_person+variable, function(x)
   c(seroconverted=x$seroconverted[1],
     age_at_sampling=mean(x$age_at_sampling),
     varable=x$variable[1],
