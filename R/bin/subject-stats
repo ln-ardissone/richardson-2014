@@ -1,0 +1,14 @@
+#!/usr/bin/env Rscript
+
+library(plyr)
+library(phyloseq)
+
+load('dipp-rarefied-phyloseq.RData')
+
+meta <- data.frame(dipp@sam_data)
+
+sorted <- meta[with(meta, order(age_at_sampling)),]
+
+subjects <- ddply(sorted, ~ dipp_person, function(x) x[1,])
+
+summary(subjects)
