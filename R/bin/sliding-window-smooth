@@ -7,6 +7,7 @@ library(reshape2)
 
 FACTORS <- c('seroconverted')
 CUTS <- 8
+TOP <- 12
 FORMULA <- ~ seroconverted + age_at_sampling
 TAX_RANK <- 'Genus'
 
@@ -59,7 +60,7 @@ smoothed$name <- taxa[smoothed$variable,][,TAX_RANK]
 
 avg <- ddply(mdat, ~variable, function(x) c(mean=mean(x$value)))
 
-keep <- avg[with(avg, order(-mean)),][1:12,]$variable
+keep <- avg[with(avg, order(-mean)),][1:TOP,]$variable
 
 smoothed.keep <- smoothed[smoothed$variable %in% keep,]
 
