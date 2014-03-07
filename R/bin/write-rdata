@@ -41,4 +41,6 @@ if (options$unique == TRUE) {
 
 if (options$rarefy == TRUE) dipp <- rarefy_even_depth(dipp, 10000)
 
+dipp
+
 save(dipp, file=options$output)
