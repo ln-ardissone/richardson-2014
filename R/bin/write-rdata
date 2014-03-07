@@ -16,10 +16,12 @@ parser <- OptionParser(option_list = option_list)
 
 options <- parse_args(parser)
 
-source('./lib/load_dipp.R')
+suppressMessages(suppressWarnings(source('./lib/load_dipp.R')))
 
 dipp <- load.dipp()
 
+cat("Before uniquification\n")
+dipp
 
 if (options$unique == TRUE) {
   library(plyr)
@@ -36,11 +38,15 @@ if (options$unique == TRUE) {
 
   # put back rownames.
   rownames(uniqued) <- uniqued$illumina_id
-  dipp@sam_data <- sam_data(uniqued)
+  dipp <- phyloseq(sam_data(uniqued), otu_table(dipp), tax_table(dipp))
 }
+
+cat("Before rarefaction\n")
+dipp
 
 if (options$rarefy == TRUE) dipp <- rarefy_even_depth(dipp, 10000)
 
+cat("After rarefaction\n")
 dipp
 
 save(dipp, file=options$output)
