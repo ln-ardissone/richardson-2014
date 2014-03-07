@@ -30,7 +30,7 @@ if (options$unique == TRUE) {
 
   uniqued <- ddply(meta, ~sample_id, function(x) {
         # sort by total reads in descending order
-        sorted <- x[with(x, order(-total_rads)),]
+        sorted <- x[with(x, order(-total_reads)),]
         sorted[1,]
   })
 
