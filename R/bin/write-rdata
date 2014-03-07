@@ -6,13 +6,39 @@
 # Makes for quick loading later on.
 #
 
+library(optparse)
+
+option_list <- c(make_option('--output', type='character', default='/dev/stdout'),
+                 make_option('--unique', type='logical', default=FALSE, action='store_true'),
+                 make_option('--rarefy', type='logical', default=FALSE, action='store_true'))
+
+parser <- OptionParser(option_list = option_list)
+
+options <- parse_args(parser)
+
 source('./lib/load_dipp.R')
 
-phy <- load.dipp()
+dipp <- load.dipp()
 
-keep <- subset_samples(phy, aa_count != 1)
-keep <- subset_samples(keep, TechReps == FALSE | illumina_lane == 1)
 
-dipp <- rarefy_even_depth(keep, 10000)
+if (options$unique == TRUE) {
+  library(plyr)
+  meta <- data.frame(sam_data(dipp), check.names=F)
 
-save(dipp, file='dipp-rarefied-phyloseq.RData')
+  # ddply drops rownames.
+  meta$illumina_id <- rownames(meta)
+
+  uniqued <- ddply(meta, ~sample_id, function(x) {
+        # sort by total reads in descending order
+        sorted <- x[with(x, order(-total_rads)),]
+        sorted[1,]
+  })
+
+  # put back rownames.
+  rownames(uniqued) <- uniqued$illumina_id
+  dipp@sam_data <- sam_data(uniqued)
+}
+
+if (options$rarefy == TRUE) dipp <- rarefy_even_depth(dipp, 10000)
+
+save(dipp, file=options$output)
