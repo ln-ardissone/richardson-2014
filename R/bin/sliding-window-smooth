@@ -1,9 +1,11 @@
 #!/usr/bin/env Rscript
-#
+
 library(phyloseq)
 library(ggplot2)
 library(plyr)
 library(reshape2)
+
+source('lib/ggplot_theme.R')
 
 FACTORS <- c('seroconverted')
 CUTS <- 8
@@ -33,11 +35,6 @@ for (var in c(vars, 'dipp_person', 'group')) otus[,var] <- meta[,var]
 
 mdat <- melt(otus, c(vars, 'dipp_person', 'group'))
 
-smoothing_formula <- as.formula(paste('~',
-                                      FACTORS,
-                                      '+ group',
-                                      '+ variable'))
-
 averaged <- ddply(mdat, ~group+dipp_person+variable, function(x)
   c(seroconverted=x$seroconverted[1],
     age_at_sampling=mean(x$age_at_sampling),
@@ -64,7 +61,17 @@ keep <- avg[with(avg, order(-mean)),][1:TOP,]$variable
 
 smoothed.keep <- smoothed[smoothed$variable %in% keep,]
 
+ggplot.pal.scale <- scale_fill_manual(values=c("#FFAB00", # cases
+                                             "#999999"), # controls
+                                          name='Status'
+                                        )
+
+
 ggplot(smoothed.keep,
-       aes(x=as.integer(age_at_sampling), y=mean, fill=as.factor(seroconverted))) +
+       aes(x=as.integer(age_at_sampling), y=mean, fill=factor(seroconverted, levels=c(1, 0), labels=c('Case', 'Control')))) +
 facet_wrap(~name, scale='free_y') +
-geom_ribbon(aes(ymin=mean - se, ymax=mean + se), width=0, alpha=0.5)
+geom_ribbon(aes(ymin=mean - se, ymax=mean + se), width=0, alpha=0.5) +
+xlab('Age at Sampling (days)') +
+ylab('Relative Abundance') +
+ggplot.pal.scale +
+ggplot.theme
