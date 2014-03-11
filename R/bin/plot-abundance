@@ -1,0 +1,34 @@
+#!/usr/bin/env rscript
+
+# Plot a density graph of the abundance distribution of --name at rank --rank
+
+library(optparse)
+
+option_list <- c(make_option('--input', type='character'),
+                 make_option('--rank', type='character'),
+                 make_option('--name', type='character'))
+
+parser <- OptionParser(option_list = option_list)
+
+options <- parse_args(parser)
+
+print(options)
+
+library(ggplot2)
+library(phyloseq)
+
+load(options$input)
+
+ss.expression <- parse(text=paste(options$rank, '==', paste('"', options$name, '"', sep='')))
+
+ss <- subset_taxa(dipp, eval(ss.expression))
+
+glom <- tax_glom(ss, taxrank = options$rank)
+
+
+otus <- data.frame(t(otu_table(glom)))
+
+colnames(otus) <- options$name
+
+ggplot(otus, aes_string(x=options$name)) +
+geom_density()
