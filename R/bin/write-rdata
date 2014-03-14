@@ -34,6 +34,9 @@ if (options$unique == TRUE) {
   # ddply drops rownames.
   meta$illumina_id <- rownames(meta)
 
+  # get total number of reads
+  meta$total_reads <- rowSums(otu_table(dipp))
+
   uniqued <- ddply(meta, ~sample_id, function(x) {
         # sort by total reads in descending order
         sorted <- x[with(x, order(-total_reads)),]
