@@ -1,5 +1,18 @@
 #!/usr/bin/env Rscript
 
+library(optparse)
+
+option_list <- c(make_option('--input', type='character', default='/dev/stdin'),
+                 make_option('--rank', type='character'),
+                 make_option('--cuts', type='numeric', default=12),
+                 make_option('--top', type='numeric', default=12),
+                 make_option('--output', type='character', default='Rplots.pdf')
+                )
+
+
+parser <- OptionParser(option_list = option_list)
+options <- parse_args(parser)
+
 library(phyloseq)
 library(ggplot2)
 library(plyr)
@@ -8,14 +21,14 @@ library(reshape2)
 source('lib/ggplot_theme.R')
 
 FACTORS <- c('seroconverted')
-CUTS <- 8
-TOP <- 12
+CUTS <- options$cuts
+TOP <- options$top
 FORMULA <- ~ seroconverted + age_at_sampling
-TAX_RANK <- 'Genus'
+TAX_RANK <- options$rank
 
 se <- function(x) sd(x)/sqrt(length(x))
 
-load('dipp-rarefied-phyloseq.RData')
+load(options$input)
 
 ss <- subset_samples(dipp, age_at_sampling <= 600)
 
@@ -67,6 +80,14 @@ ggplot.pal.scale <- scale_fill_manual(values=c("#FFAB00", # cases
                                         )
 
 
+pdf(options$output)
+
+means <- ddply(smoothed.keep, ~name, function(x) c(mean=mean(x$mean)))
+
+print(means)
+
+means$name <- factor(means$name, levels=means$name[with(means, order(-mean)),])
+
 ggplot(smoothed.keep,
        aes(x=as.integer(age_at_sampling), y=mean, fill=factor(seroconverted, levels=c(1, 0), labels=c('Case', 'Control')))) +
 facet_wrap(~name, scale='free_y') +
@@ -75,3 +96,5 @@ xlab('Age at Sampling (days)') +
 ylab('Relative Abundance') +
 ggplot.pal.scale +
 ggplot.theme
+
+dev.off()
