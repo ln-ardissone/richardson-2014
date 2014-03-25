@@ -8,3 +8,5 @@ dipp-rf-uniq.RData:
 
 sliding-window-%.pdf: dipp-rf-uniq.RData
 	bin/sliding-window-smooth --rank $* --output $@ --input $<
+
+phyloseq: dipp-rf-uniq.RData
