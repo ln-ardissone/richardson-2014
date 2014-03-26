@@ -16,7 +16,9 @@ dipp-rf-uniq.RData:
 		--metadata $(METADATA) \
 		--taxonomies $(TAXONOMIES)
 
+CUTS?=12
+
 sliding-window-%.pdf: dipp-rf-uniq.RData
-	bin/sliding-window-smooth --rank $* --output $@ --input $<
+	bin/sliding-window-smooth --rank $* --output $@ --input $< --cuts $(CUTS)
 
 phyloseq: dipp-rf-uniq.RData
