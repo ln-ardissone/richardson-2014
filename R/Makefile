@@ -2,7 +2,7 @@ OTUTABLE?='../data/dipp.gg135.97.50r10s.csv'
 METADATA?='../data/dipp.sample_data.csv'
 TAXONOMIES?='../data/dipp.modified_taxonomies.csv'
 
-default: sliding_window
+default: sliding_window picrust
 	echo 'done!'
 
 sliding_window: sliding-window-Phylum.pdf sliding-window-Class.pdf sliding-window-Order.pdf sliding-window-Family.pdf sliding-window-Genus.pdf sliding-window-Species.pdf
