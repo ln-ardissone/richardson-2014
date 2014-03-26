@@ -1,3 +1,7 @@
+OTUTABLE?='../data/dipp.gg135.97.50r10s.csv'
+METADATA?='../data/dipp.sample_data.csv'
+TAXONOMIES?='../data/dipp.modified_taxonomies.csv'
+
 default: sliding_window
 	echo 'done!'
 
@@ -8,9 +12,9 @@ dipp-rf-uniq.RData:
 		--unique \
 		--rarefy \
 		--output $@ \
-		--otutable ../data/dipp.gg135.97.50r10s.csv \
-		--metadata ../data/dipp.sample_data.csv \
-		--taxonomies ../data/dipp.modified_taxonomies.csv
+		--otutable $(OTUTABLE) \
+		--metadata $(METADATA) \
+		--taxonomies $(TAXONOMIES)
 
 sliding-window-%.pdf: dipp-rf-uniq.RData
 	bin/sliding-window-smooth --rank $* --output $@ --input $<
