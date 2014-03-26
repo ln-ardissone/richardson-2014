@@ -16,9 +16,23 @@ dipp-rf-uniq.RData:
 		--metadata $(METADATA) \
 		--taxonomies $(TAXONOMIES)
 
+dipp-rf-uniq-metagenome.RData:
+	bin/write-rdata \
+		--unique \
+		--rarefy \
+		--output $@ \
+		--otutable '../data/dipp.predicted_metagenome.for_phyloseq.csv' \
+		--metadata $(METADATA) \
+		--taxonomies '../data/ko_tax_table.csv'
+
 CUTS?=12
 
 sliding-window-%.pdf: dipp-rf-uniq.RData
 	bin/sliding-window-smooth --rank $* --output $@ --input $< --cuts $(CUTS)
 
 phyloseq: dipp-rf-uniq.RData
+
+picrust: picrust-X0.pdf picrust-X1.pdf picrust-X2.pdf picrust-X3.pdf
+
+picrust-%.pdf: dipp-rf-uniq-metagenome.RData
+	bin/sliding-window-smooth --rank $* --output $@ --input $< --cuts $(CUTS) --top 64
