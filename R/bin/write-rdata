@@ -22,7 +22,10 @@ options <- parse_args(parser)
 
 suppressMessages(suppressWarnings(source('./lib/load_dipp.R')))
 
-dipp <- load.dipp(otu.table=options$otutable, sam.data=options$metadata, tax.table=options$taxonomies, tree=options$tree)
+dipp <- load.dipp(otu.table=options$otutable,
+                  sam.data=options$metadata,
+                  tax.table=options$taxonomies,
+                  tree=options$tree)
 
 cat("Before uniquification\n")
 dipp
