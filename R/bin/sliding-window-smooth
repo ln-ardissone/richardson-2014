@@ -35,7 +35,12 @@ ss <- subset_samples(dipp, age_at_sampling <= 600)
 dipp.glom <- tax_glom(ss, taxrank=TAX_RANK)
 
 meta <- data.frame(sam_data(dipp.glom))
-otus <- data.frame(t(otu_table(dipp.glom)), check.names=F)
+
+if( taxa_are_rows(dipp.glom) ) {
+  otus <- data.frame(t(otu_table(dipp.glom)), check.names=F)
+} else {
+  otus <- data.frame(otu_table(dipp.glom), check.names=F)
+}
 taxa <- data.frame(tax_table(dipp.glom))
 
 meta$group <- cut(meta$age_at_sampling,

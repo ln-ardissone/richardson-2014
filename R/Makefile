@@ -10,7 +10,6 @@ sliding_window: sliding-window-Phylum.pdf sliding-window-Class.pdf sliding-windo
 dipp-rf-uniq.RData:
 	bin/write-rdata \
 		--unique \
-		--rarefy \
 		--output $@ \
 		--otutable $(OTUTABLE) \
 		--metadata $(METADATA) \
@@ -19,7 +18,6 @@ dipp-rf-uniq.RData:
 dipp-rf-uniq-metagenome.RData:
 	bin/write-rdata \
 		--unique \
-		--rarefy \
 		--output $@ \
 		--otutable '../data/dipp.predicted_metagenome.for_phyloseq.csv' \
 		--metadata $(METADATA) \

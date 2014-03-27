@@ -10,7 +10,7 @@ library(optparse)
 
 option_list <- c(make_option('--output', type='character', default='/dev/stdout'),
                  make_option('--unique', type='logical', default=FALSE, action='store_true'),
-                 make_option('--rarefy', type='logical', default=FALSE, action='store_true'),
+                 make_option('--rarefy', type='numeric'),
                  make_option('--otutable', type='character'),
                  make_option('--metadata', type='character'),
                  make_option('--taxonomies', type='character'),
@@ -54,7 +54,13 @@ if (options$unique == TRUE) {
 cat("Before rarefaction\n")
 dipp
 
-if (options$rarefy == TRUE) dipp <- rarefy_even_depth(dipp, 10000)
+if (!is.null(options$rarefy)) {
+  dipp <- rarefy_even_depth(dipp, options$rarefy)
+} else {
+  # McMurdie's Method:
+  total <- median(sample_sums(dipp))
+  dipp <- transform_sample_counts(dipp, function(x, t = total) round ( t * (x/sum(x)) ) )
+}
 
 cat("After rarefaction\n")
 dipp
