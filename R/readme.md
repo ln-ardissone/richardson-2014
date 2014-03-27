@@ -4,8 +4,8 @@
 
 [R](http://www.r-project.org) version 3.0 with the following
 requirements:
-- [Phyloseq](https://github.com/joey711/phyloseq)
-- [Optparse](https://github.com/trevorld/optparse)
+- [phyloseq](https://github.com/joey711/phyloseq)
+- [optparse](https://github.com/trevorld/optparse)
 - [ggplot2](https://github.com/hadley/ggplot2)
 - [plyr](https://github.com/hadley/plyr)
 - [reshape2](https://github.com/hadley/reshape2)
