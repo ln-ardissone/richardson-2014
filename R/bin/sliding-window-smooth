@@ -86,8 +86,6 @@ means <- ddply(smoothed.keep, ~name, function(x) c(mean=mean(x$mean)))
 
 print(means)
 
-means$name <- factor(means$name, levels=means$name[with(means, order(-mean)),])
-
 ggplot(smoothed.keep,
        aes(x=as.integer(age_at_sampling), y=mean, fill=factor(seroconverted, levels=c(1, 0), labels=c('Case', 'Control')))) +
 facet_wrap(~name, scale='free_y') +
