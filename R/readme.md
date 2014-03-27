@@ -12,9 +12,8 @@ requirements:
 
 ## Instructions
 
-`make` - should plot all the plots
-
-`make -j 24` - should plot all the plots (faster)
+- `make` - plot all the plots.
+- `make -j 24` - quickly plot all the plots.
 
 ## Details
 
