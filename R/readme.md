@@ -2,7 +2,8 @@
 
 ## Requirements
 
-- [R](http://www.r-project.org) 3.0.0
+[R](http://www.r-project.org) version 3.0 with the following
+requirements:
 - [Phyloseq](https://github.com/joey711/phyloseq)
 - [Optparse](https://github.com/trevorld/optparse)
 - [ggplot2](https://github.com/hadley/ggplot2)
