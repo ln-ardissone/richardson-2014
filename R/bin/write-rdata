@@ -11,6 +11,7 @@ library(optparse)
 option_list <- c(make_option('--output', type='character', default='/dev/stdout'),
                  make_option('--unique', type='logical', default=FALSE, action='store_true'),
                  make_option('--rarefy', type='numeric'),
+                 make_option('--proportion', type='logical', action='store_true', default=FALSE),
                  make_option('--otutable', type='character'),
                  make_option('--metadata', type='character'),
                  make_option('--taxonomies', type='character'),
@@ -60,6 +61,10 @@ if (!is.null(options$rarefy)) {
   # McMurdie's Method:
   total <- median(sample_sums(dipp))
   dipp <- transform_sample_counts(dipp, function(x, t = total) round ( t * (x/sum(x)) ) )
+}
+
+if (options$proportion == TRUE) {
+  dipp <- transform_sample_counts(dipp, function(x) x/sum(x))
 }
 
 cat("After rarefaction\n")
