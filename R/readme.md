@@ -1,5 +1,7 @@
 # R Code
 
+(c) 2014 Austin G. Davis-Richardson
+
 ## Requirements
 
 [R](http://www.r-project.org) version 3.0 with the following
