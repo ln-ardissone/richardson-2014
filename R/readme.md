@@ -1,7 +1,16 @@
 # R Code
 
+## Requirements
+
+- [R](http://www.r-project.org) 3.0.0
+- [Phyloseq](https://github.com/joey711/phyloseq)
+- [Optparse](https://github.com/trevorld/optparse)
 
 ## Instructions
+
+`make`
+
+### Individual scripts
 
 1. Create a phyloseq object
 
