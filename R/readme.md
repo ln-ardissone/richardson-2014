@@ -8,22 +8,37 @@
 
 ## Instructions
 
-`make`
+`make` - should plot all the plots
 
-### Individual scripts
+`make -j 24` - should plot all the plots (faster)
 
-1. Create a phyloseq object
+## Details
 
-This will load the OTU table, metadata and taxonomy table, import into 
-Phyloseq and save the Phyloseq object as an `RData` file:
+First run `bin/write-rdata` to load the OTU table, metadata, and
+taxonomies into R and create a Phyloseq object and write this object to
+`stdout`. The rest of the scripts take this object as input.  This way
+you can be sure the number of samples is consistent between scripts. It
+also has the added benefit of making things a lot faster.
 
-```
-bin/write-rdata --unique --rarefy --output dipp-uniq-rarefy.RData
-```
+### Example
 
+```sh
 
-2. Run a script
+bin/write-rdata \
+  --otutable otus.csv \
+  --metadata metadata.csv \
+  --taxonomies taxonomies.csv \
+  # rarefy to 10k reads per sample \
+  # excludes samples with < 10k reads \
+  --rarefy 10000 \
+  --output experiment.RData
 
-```
-bin/sliding-window-smooth
+bin/sliding-window-smooth \
+  --input experiment.Rdata \
+  --rank Genus \
+  --output sliding-window-Genus.pdf \
+  # number of windows \
+  --cuts 12 \
+  # plot only top n Genera \
+  --top 12
 ```
