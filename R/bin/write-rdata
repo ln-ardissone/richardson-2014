@@ -22,6 +22,7 @@ parser <- OptionParser(option_list = option_list)
 options <- parse_args(parser)
 
 suppressMessages(suppressWarnings(source('./lib/load_dipp.R')))
+suppressMessages(suppressWarnings(source('./lib/normalize.R')))
 
 dipp <- load.dipp(otu.table=options$otutable,
                   sam.data=options$metadata,
@@ -60,12 +61,14 @@ if (!is.null(options$rarefy)) {
 } else {
   # McMurdie's Method:
   total <- median(sample_sums(dipp))
-  dipp <- transform_sample_counts(dipp, function(x, t = total) round ( t * (x/sum(x)) ) )
+ #  dipp <- transform_sample_counts(dipp, function(x, t = total) round ( t * (x/sum(x)) ) )
+#  dipp <- edgeRnorm(dipp)
+  dipp <- deseq_varstab(dipp)
 }
 
-if (options$proportion == TRUE) {
-  dipp <- transform_sample_counts(dipp, function(x) x/sum(x))
-}
+#if (options$proportion == TRUE) {
+#  dipp <- transform_sample_counts(dipp, function(x) x/sum(x))
+#}
 
 cat("After rarefaction\n")
 dipp
