@@ -53,23 +53,24 @@ for (var in c(vars, 'dipp_person', 'group')) otus[,var] <- meta[,var]
 
 mdat <- melt(otus, c(vars, 'dipp_person', 'group'))
 
-averaged <- ddply(mdat, ~group+dipp_person+variable, function(x)
+averaged <- ddply(mdat, ~group+dipp_person+variable, function(x) {
   c(seroconverted=x$seroconverted[1],
     age_at_sampling=mean(x$age_at_sampling),
     varable=x$variable[1],
     value=mean(x$value),
     group=x$group[1])
-)
+})
 
 
-smoothing_formula <- as.formula(paste('~',
-                                      FACTORS,
-                                      '+ group',
-                                      '+ variable'))
-
-smoothed <- ddply(averaged, smoothing_formula, function(x) {
+smoothed <- ddply(averaged, ~ seroconverted + group + variable, function(x) {
   c(age_at_sampling=mean(x$age_at_sampling), mean=mean(x$value), se=se(x$value))
 })
+
+pvalues <- ddply(averaged, ~ group + variable, function(x) {
+  c(pvalue=wilcox.test(value ~ seroconverted, data=x, exact=FALSE)$p.value)
+})
+
+smoothed <- merge(smoothed, pvalues)
 
 smoothed$name <- taxa[smoothed$variable,][,TAX_RANK]
 
@@ -89,15 +90,16 @@ pdf(options$output)
 
 means <- ddply(smoothed.keep, ~name, function(x) c(mean=mean(x$mean)))
 
-print(means)
+smoothed.keep$age_at_sampling <- as.integer(as.character(smoothed.keep$age_at_sampling))
 
 ggplot(smoothed.keep,
-       aes(x=as.integer(age_at_sampling), y=mean, fill=factor(seroconverted, levels=c(1, 0), labels=c('Case', 'Control')))) +
+       aes(x=age_at_sampling, y=mean, fill=factor(seroconverted, levels=c(1, 0), labels=c('Case', 'Control')))) +
 facet_wrap(~name, scale='free_y') +
 geom_ribbon(aes(ymin=mean - se, ymax=mean + se), width=0, alpha=0.5) +
 xlab('Age at Sampling (days)') +
 ylab('Relative Abundance') +
 ggplot.pal.scale +
-ggplot.theme
+ggplot.theme +
+geom_rug(aes(x=age_at_sampling, color=pvalue < 0.05), sides='b')
 
 dev.off()
