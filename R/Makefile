@@ -1,6 +1,7 @@
 OTUTABLE?='../data/dipp.gg135.97.50r10s.csv'
 METADATA?='../data/dipp.sample_data.csv'
 TAXONOMIES?='../data/dipp.modified_taxonomies.csv'
+NORMALIZE?='edger'
 
 default: sliding_window picrust
 	echo 'done!'
@@ -10,8 +11,9 @@ sliding_window: sliding-window-Phylum.pdf sliding-window-Class.pdf sliding-windo
 dipp-rf-uniq.RData:
 	bin/write-rdata \
 		--unique \
-		--proportion \
 		--output $@ \
+		--normalize $(NORMALIZE) \
+		--proportion \
 		--otutable $(OTUTABLE) \
 		--metadata $(METADATA) \
 		--taxonomies $(TAXONOMIES)
@@ -20,6 +22,7 @@ dipp-rf-uniq-metagenome.RData:
 	bin/write-rdata \
 		--unique \
 		--output $@ \
+		--normalize $(NORMALIZE) \
 		--proportion \
 		--otutable '../data/dipp.predicted_metagenome.for_phyloseq.csv' \
 		--metadata $(METADATA) \
