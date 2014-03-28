@@ -4,11 +4,12 @@
 
 [R](http://www.r-project.org) version 3.0 with the following
 requirements:
-- [phyloseq](https://github.com/joey711/phyloseq)
-- [optparse](https://github.com/trevorld/optparse)
-- [ggplot2](https://github.com/hadley/ggplot2)
-- [plyr](https://github.com/hadley/plyr)
-- [reshape2](https://github.com/hadley/reshape2)
+
+- optparse v1.0.2
+- phyloseq v1.6.1
+- ggplot2 v0.9.3.1
+- reshape2 v1.2.2
+- plyr v1.8.1
 
 ## Instructions
 
