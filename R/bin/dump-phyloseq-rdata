@@ -1,7 +1,6 @@
 #!/usr/bin/env rscript
 
 library(optparse)
-library(phyloseq)
 
 option_list <- c(make_option('--rdata', default='/dev/stdin'),
                  make_option('--otutable'),
@@ -13,6 +12,8 @@ parser <- OptionParser(option_list = option_list)
 options <- parse_args(parser)
 
 load(options$rdata)
+
+library(phyloseq)
 
 if (!is.null(options$otutable)) {
   cat(paste('writing otu table to', options$otutable, '\n'))
