@@ -1,0 +1,33 @@
+#!/usr/bin/env rscript
+
+library(optparse)
+library(phyloseq)
+
+option_list <- c(make_option('--rdata', default='/dev/stdin'),
+                 make_option('--otutable'),
+                 make_option('--metadata'),
+                 make_option('--taxonomies')
+                )
+
+parser <- OptionParser(option_list = option_list)
+options <- parse_args(parser)
+
+load(options$rdata)
+
+if (!is.null(options$otutable)) {
+  cat(paste('writing otu table to', options$otutable, '\n'))
+  df <- data.frame(otu_table(dipp), check.names=F)
+  write.csv(df, file=options$otutable)
+}
+
+if (!is.null(options$metadata)) {
+  cat(paste('writing metadata table to', options$metadata, '\n'))
+  df <- data.frame(sample_data(dipp), check.names=F)
+  write.csv(df, file=options$metadata)
+}
+
+if (!is.null(options$taxonomies)) {
+  cat(paste('writing taxonomy table to', options$taxonomies, '\n'))
+  df <- data.frame(tax_table(dipp), check.names=F)
+  write.csv(df, file=options$taxonomies)
+}
