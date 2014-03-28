@@ -1,5 +1,5 @@
-#!/usr/bin/env Rscript
 
+#!/usr/bin/env Rscript
 #
 # Load the DIPP data.
 # Save as a phyloseq class in an RData file.
@@ -63,9 +63,6 @@ if (options$normalize == 'rarefaction') {
 } else if (options$normalize == 'edger') {
   cat('applying edgeR normalization\n')
   dipp <- edgeRnorm(dipp)
-} else if (options$normalize == 'deseq') {
-  cat('applying DESEQ normalization\n')
-  dipp <- deseq_varstab(dipp)
 }
 
 if (options$proportion == TRUE) {
