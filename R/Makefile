@@ -40,6 +40,9 @@ picrust: picrust-X0.pdf picrust-X1.pdf picrust-X2.pdf picrust-X3.pdf
 picrust-%.pdf: dipp-rf-uniq-metagenome.RData
 	bin/sliding-window-smooth --rank $* --output $@ --input $< --cuts $(CUTS) --top 64
 
+ordination.pdf: dipp-rf-uniq.RData
+	bin/ordination --input $< --output ordination.pdf
+
 clean:
 	rm *.RData
 	rm *.pdf
