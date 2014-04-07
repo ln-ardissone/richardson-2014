@@ -1,0 +1,26 @@
+#!/usr/bin/env rscript
+
+library(optparse)
+
+option_list <- c(make_option('--input', default='/dev/stdin'),
+                 make_option('--rank'),
+                 make_option('--output', default='/dev/stdout')
+                )
+
+
+parser <- OptionParser(option_list = option_list)
+options <- parse_args(parser)
+
+library(phyloseq)
+
+load(options$input)
+
+glom <- tax_glom(dipp, taxrank = options$rank)
+
+otus <- data.frame(otu_table(glom), check.names=F)
+
+names <- data.frame(tax_table(glom))[,options$rank]
+
+colnames(otus) <- names
+
+write.csv(otus, file=options$output)

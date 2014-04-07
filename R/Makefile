@@ -1,3 +1,5 @@
+# vim: set noexpandtab
+
 OTUTABLE?='../data/dipp.gg135.97.50r10s.csv'
 METADATA?='../data/dipp.sample_data.csv'
 TAXONOMIES?='../data/dipp.modified_taxonomies.csv'
@@ -42,6 +44,14 @@ picrust-%.pdf: dipp-rf-uniq-metagenome.RData
 
 ordination.pdf: dipp-rf-uniq.RData
 	bin/ordination --input $< --output ordination.pdf
+
+rank_tables:
+	mkdir -p rank_tables
+
+rank_tables/%.csv: rank_tables
+	bin/make-rank-table --rank $* --output $@ --input dipp-rf-uniq.RData
+
+tables: rank_tables/Phylum.csv rank_tables/Class.csv rank_tables/Order.csv rank_tables/Family.csv rank_tables/Genus.csv rank_tables/Species.csv
 
 clean:
 	rm *.RData
