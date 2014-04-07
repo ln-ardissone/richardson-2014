@@ -34,7 +34,7 @@ ss <- subset_samples(dipp, age_at_sampling <= 600)
 
 dipp.glom <- tax_glom(ss, taxrank=TAX_RANK)
 
-meta <- data.frame(sam_data(dipp.glom))
+meta <- data.frame(sample_data(dipp.glom))
 
 if( taxa_are_rows(dipp.glom) ) {
   otus <- data.frame(t(otu_table(dipp.glom)), check.names=F)
