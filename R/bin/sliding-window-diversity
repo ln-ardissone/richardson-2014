@@ -1,0 +1,65 @@
+#!/usr/bin/env Rscript
+
+library(optparse)
+
+
+option_list <- c(make_option('--input', type='character', default='/dev/stdin'),
+                 make_option('--cuts', type='numeric', default=12),
+                 make_option('--output', type='character', default='Rplots.pdf')
+                )
+
+
+parser <- OptionParser(option_list = option_list)
+options <- parse_args(parser)
+
+library(phyloseq)
+library(ggplot2)
+library(plyr)
+library(reshape2)
+
+source('lib/ggplot_theme.R')
+
+se <- function(x) sd(x)/sqrt(length(x))
+
+load(options$input)
+
+ss <- subset_samples(dipp, age_at_sampling <= 600)
+
+if( taxa_are_rows(ss) ) {
+  otus <- data.frame(t(otu_table(ss)), check.names=F)
+} else {
+  otus <- data.frame(otu_table(ss), check.names=F)
+}
+
+meta <- data.frame(sample_data(ss))
+
+meta$group <- cut(meta$age_at_sampling,
+                  breaks=options$cuts,
+                  labels=1:options$cuts)
+
+
+for (var in c('seroconverted', 'dipp_person', 'group')) otus[,var] <- meta[,var]
+
+mdat <- melt(otus, c('seroconverted', 'dipp_person', 'group'))
+
+averaged <- ddply(mdat, ~group+dipp_person+variable, function(x) {
+  c(seroconverted=x$seroconverted[1],
+    age_at_sampling=mean(x$age_at_sampling),
+    varable=x$variable[1],
+    value=mean(x$value),
+    group=x$group[1])
+})
+
+diversity <- function(x, method) {
+  if (method == 'shannon') shannon(x)
+}
+
+shannon <- function(x) {
+  -1 * sum(sapply(x, FUN=function(i) i*log(i)))
+}
+
+smoothed <- ddply(averaged, ~ seroconverted + group + variable, function(x) {
+  c(age_at_sampling=mean(x$age_at_sampling), diversity=diversity(x$value, 'shannon'))
+})
+
+ggplot(smoothed, aes(x=age_at_sampling, y=diversity)) + geom_point()
