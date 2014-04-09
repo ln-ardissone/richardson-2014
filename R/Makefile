@@ -5,6 +5,7 @@ METADATA?='../data/dipp-sample_data.csv'
 TAXONOMIES?='../data/dipp-tax_table.csv'
 METAGENOME?='../data/dipp-predicted_metagenome.csv'
 METAGENOME_TAX?='../data/dipp-kegg_orthologies.csv'
+FDR?='default' # FDR correction method
 NORMALIZE?='edger'
 
 default: sliding_window picrust
@@ -35,7 +36,13 @@ dipp-rf-uniq-metagenome.RData:
 CUTS?=12
 
 sliding-window-%.pdf: dipp-rf-uniq.RData
-	bin/sliding-window-smooth --rank $* --output $@ --input $< --cuts $(CUTS) --top 12
+	bin/sliding-window-smooth \
+		--rank $* \
+		--output $@ \
+		--input $< \
+		--cuts $(CUTS) \
+		--top 12 \
+		--fdr $(FDR)
 
 phyloseq: dipp-rf-uniq.RData
 

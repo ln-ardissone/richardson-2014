@@ -6,7 +6,8 @@ option_list <- c(make_option('--input', type='character', default='/dev/stdin'),
                  make_option('--rank', type='character'),
                  make_option('--cuts', type='numeric', default=12),
                  make_option('--top', type='numeric', default=12),
-                 make_option('--output', type='character', default='Rplots.pdf')
+                 make_option('--output', type='character', default='Rplots.pdf'),
+                 make_option('--fdr', type='character', default='default')
                 )
 
 
@@ -53,6 +54,9 @@ for (var in c(vars, 'dipp_person', 'group')) otus[,var] <- meta[,var]
 
 mdat <- melt(otus, c(vars, 'dipp_person', 'group'))
 
+N_OTUS <- length(unique(mdat$variable))
+
+
 averaged <- ddply(mdat, ~group+dipp_person+variable, function(x) {
   c(seroconverted=x$seroconverted[1],
     age_at_sampling=mean(x$age_at_sampling),
@@ -61,7 +65,6 @@ averaged <- ddply(mdat, ~group+dipp_person+variable, function(x) {
     group=x$group[1])
 })
 
-
 smoothed <- ddply(averaged, ~ seroconverted + group + variable, function(x) {
   c(age_at_sampling=mean(x$age_at_sampling), mean=mean(x$value), se=se(x$value))
 })
@@ -69,6 +72,16 @@ smoothed <- ddply(averaged, ~ seroconverted + group + variable, function(x) {
 pvalues <- ddply(averaged, ~ group + variable, function(x) {
   c(pvalue=wilcox.test(value ~ seroconverted, data=x, exact=FALSE)$p.value)
 })
+
+#
+# FDR Corrections
+#
+
+# perform two corrections for multiple hypothesis testing
+#
+# correct1 - lower bound, consider the number of OTUs the number of independent statistical tests
+# correct2 - upper bound, consider the number of tests the number of indepdendent statistical tests
+
 
 smoothed <- merge(smoothed, pvalues)
 
@@ -79,6 +92,19 @@ avg <- ddply(mdat, ~variable, function(x) c(mean=mean(x$value)))
 keep <- avg[with(avg, order(-mean)),][1:TOP,]$variable
 
 smoothed.keep <- smoothed[smoothed$variable %in% keep,]
+
+cat(paste('Using', options$fdr, 'correction\n'))
+
+print(length(unique(smoothed.keep$variable)))
+
+if (options$fdr == 'default') {
+} else if (options$fdr == 'strict') { # * total number of OTUs
+  smoothed.keep$pvalue <- smoothed.keep$pvalue * length(unique(smoothed.keep$variable))
+} else if (options$fdr == 'doubleplusstrict') { # * total number of tests
+  smoothed.keep$pvalue <- smoothed.keep$pvalue * nrow(smoothed.keep)
+} else {
+  smoothed.keep$pvalue <- p.adjust(smoothed.keep$pvalue, method=options$method)
+}
 
 ggplot.pal.scale <- scale_fill_manual(values=c("#FFAB00", # cases
                                              "#999999"), # controls
