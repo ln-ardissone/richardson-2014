@@ -1,8 +1,10 @@
 # vim: set noexpandtab
 
-OTUTABLE?='../data/dipp.gg135.97.50r10s.csv'
-METADATA?='../data/dipp.sample_data.csv'
-TAXONOMIES?='../data/dipp.modified_taxonomies.csv'
+OTUTABLE?='../data/dipp-otus_filtered.csv'
+METADATA?='../data/dipp-sample_data.csv'
+TAXONOMIES?='../data/dipp-tax_table.csv'
+METAGENOME?='../data/dipp-predicted_metagenome.csv'
+METAGENOME_TAX?='../data/dipp-kegg_orthologies.csv'
 NORMALIZE?='edger'
 
 default: sliding_window picrust
@@ -26,9 +28,9 @@ dipp-rf-uniq-metagenome.RData:
 		--output $@ \
 		--normalize $(NORMALIZE) \
 		--proportion \
-		--otutable '../data/dipp.predicted_metagenome.for_phyloseq.csv' \
+		--otutable $(METAGENOME) \
 		--metadata $(METADATA) \
-		--taxonomies '../data/ko_tax_table.csv'
+		--taxonomies $(METAGENOME_TAX)
 
 CUTS?=12
 
