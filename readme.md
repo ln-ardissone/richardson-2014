@@ -1,5 +1,9 @@
 # DIPP Turku Analysis
 
+After cloning this repo, download the data:
+
+`git submodule update --init --recursive`
+
 ## License
 
 The MIT License (MIT)
