@@ -19,44 +19,47 @@
 # preseve intermediate biom and tab files
 # as some take forever to calculate
 
-default: ../data/dipp-otus-metagenome.tab
+# needs to be run from picrust/ directory?
+PICRUST?='picrust'
 
-.PRECIOUS: %-qiime.tab
+default: dipp-otus-metagenome.tab
+
+.PRECIOUS: otus-qiime.tab
 # 1. Convert to qiime-like format.
-%-qiime.tab: %.csv
-	./csv-to-qiime.py --remove-unclassified < $< > $@
+otus-qiime.tab: ../../data/dipp-otus.csv.gz
+	gzcat $< | ./csv-to-qiime.py --remove-unclassified > $@
 
-.PRECIOUS: %-qiime.biom
+.PRECIOUS: otus-qiime.biom
 # 2. Convert tab to biom
-%-qiime.biom: %-qiime.tab
+otus-qiime.biom: otus-qiime.tab
 	biom convert \
 		--table-type 'otu table' \
 		--input-fp $< \
 		--output-fp $@
 
-.PRECIOUS: %-normalized.biom
+.PRECIOUS: otus-normalized.biom
 # 3. Normalize by copy number
-%-normalized.biom: %-qiime.biom
-	normalize_by_copy_number.py \
+otus-normalized.biom: otus-qiime.biom
+	$(PICRUST)/normalize_by_copy_number.py \
 		--gg_version '13_5' \
 		--input_otu_fp $< \
 		--output_otu_fp $@
 
-.PRECIOUS: %-metagenome.biom
-%-metagenome.biom: %-normalized.biom
-	scripts/predict_metagenomes.py \
+.PRECIOUS: predicted-metagenome.biom
+predicted-metagenome.biom: otus-normalized.biom
+	$(PICRUST)/scripts/predict_metagenomes.py \
 		--input_otu_table $< \
 		--output_metagenome_table $@
 
-.PRECIOUS: %-metagenome.tab
-%-metagenome.tab: %-metagenome.biom
+.PRECIOUS: predicted-metagenome.tab
+predicted-metagenome.tab: predicted-metagenome.biom
 	biom convert \
 		--biom-to-classic-table \
 		--input-fp $< \
 		--output-fp $@
 
-.PRECIOUS: %-metagenome-contributions.tab
-%-metagenome-contributions.tab: %-normalized.biom
-	scripts/metagenome_contributions.py \
+.PRECIOUS: predicted-metagenome-contributions.tab
+%-metagenome-contributions.tab: predicted-normalized.biom
+	$(PICRUST)/scripts/metagenome_contributions.py \
 		--input_otu_table $< \
 		--output_fp $@
