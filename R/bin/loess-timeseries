@@ -1,0 +1,23 @@
+#!/usr/bin/env Rscript
+
+library(optparse)
+
+option_list <- c(make_option('--input', type='character', default='/dev/stdin'),
+                 make_option('--rank', type='character'),
+                 make_option('--top', type='numeric', default=12),
+                 make_option('--output', type='character', default='Rplots.pdf')
+                )
+
+parser <- OptionParser(option_list = option_list)
+options <- parse_args(parser)
+
+library(phyloseq)
+library(ggplot2)
+
+load(options$input)
+
+glom <- tax_glom(dipp, taxrank=options$rank)
+
+dat <- psmelt(glom)
+
+head(dat)
