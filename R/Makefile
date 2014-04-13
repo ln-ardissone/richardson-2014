@@ -7,6 +7,8 @@ METAGENOME?='../data/dipp-predicted_metagenome.csv'
 METAGENOME_TAX?='../data/dipp-kegg_orthologies.csv'
 NORMALIZE?='edger'
 
+TESTMETHOD?='wilcox'
+
 default: sliding_window picrust
 	echo 'done!'
 
@@ -35,14 +37,14 @@ dipp-rf-uniq-metagenome.RData:
 CUTS?=12
 
 sliding-window-%.pdf: dipp-rf-uniq.RData
-	bin/sliding-window-smooth --rank $* --output $@ --input $< --cuts $(CUTS) --top 12
+	bin/sliding-window-smooth --rank $* --output $@ --input $< --cuts $(CUTS) --top 12 --testmethod $(TESTMETHOD)
 
 phyloseq: dipp-rf-uniq.RData
 
 picrust: picrust-X0.pdf picrust-X1.pdf picrust-X2.pdf picrust-X3.pdf
 
 picrust-%.pdf: dipp-rf-uniq-metagenome.RData
-	bin/sliding-window-smooth --rank $* --output $@ --input $< --cuts $(CUTS) --top 64
+	bin/sliding-window-smooth --rank $* --output $@ --input $< --cuts $(CUTS) --top 64 --testmethod $(TESTMETHOD)
 
 ordination.pdf: dipp-rf-uniq.RData
 	bin/ordination --input $< --output ordination.pdf

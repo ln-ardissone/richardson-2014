@@ -6,17 +6,33 @@ option_list <- c(make_option('--input', type='character', default='/dev/stdin'),
                  make_option('--rank', type='character'),
                  make_option('--cuts', type='numeric', default=12),
                  make_option('--top', type='numeric', default=12),
-                 make_option('--output', type='character', default='Rplots.pdf')
+                 make_option('--output', type='character', default='Rplots.pdf'),
+                 make_option('--testmethod', default='wilcox')
                 )
 
 
 parser <- OptionParser(option_list = option_list)
 options <- parse_args(parser)
 
+#
+# Define hypothesis testing method.
+#
+if (options$testmethod == 'wilcox') {
+  test_fun <- function(x) wilcox.test(value ~ seroconverted, data=x, exact=FALSE)$p.value
+} else if (options$testmethod== 'ttest') {
+  test_fun <- function(x) permTS(value ~ seroconverted, data=x)$p.value
+} else {
+  cat(paste("I don't know this test:", options$testmethod, "\n"))
+  exit()
+}
+
+cat(paste('Using', options$testmethod, 'for hypothesis testing\n'))
+
 library(phyloseq)
 library(ggplot2)
 library(plyr)
 library(reshape2)
+library(perm)
 
 source('lib/ggplot_theme.R')
 
@@ -66,9 +82,7 @@ smoothed <- ddply(averaged, ~ seroconverted + group + variable, function(x) {
   c(age_at_sampling=mean(x$age_at_sampling), mean=mean(x$value), se=se(x$value))
 })
 
-pvalues <- ddply(averaged, ~ group + variable, function(x) {
-  c(pvalue=wilcox.test(value ~ seroconverted, data=x, exact=FALSE)$p.value)
-})
+pvalues <- ddply(averaged, ~ group + variable, function(x) c(pvalue=test_fun(x)))
 
 smoothed <- merge(smoothed, pvalues)
 
