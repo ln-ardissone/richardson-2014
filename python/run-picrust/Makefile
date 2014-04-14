@@ -59,7 +59,7 @@ predicted-metagenome.tab: predicted-metagenome.biom
 		--output-fp $@
 
 .PRECIOUS: predicted-metagenome-contributions.tab
-%-metagenome-contributions.tab: predicted-normalized.biom
+predicted-metagenome-contributions.tab: predicted-normalized.biom
 	$(PICRUST)/scripts/metagenome_contributions.py \
 		--input_otu_table $< \
 		--output_fp $@
