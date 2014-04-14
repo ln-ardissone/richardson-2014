@@ -22,7 +22,7 @@
 # needs to be run from picrust/ directory?
 PICRUST?='picrust'
 
-default: dipp-otus-metagenome.tab
+default: predicted-metagenome.tab
 
 .PRECIOUS: otus-qiime.tab
 # 1. Convert to qiime-like format.
