@@ -22,7 +22,7 @@
 # needs to be run from picrust/ directory?
 PICRUST?='picrust'
 
-default: dipp-otus-metagenome.tab
+default: predicted-metagenome.tab
 
 .PRECIOUS: otus-qiime.tab
 # 1. Convert to qiime-like format.
@@ -40,7 +40,7 @@ otus-qiime.biom: otus-qiime.tab
 .PRECIOUS: otus-normalized.biom
 # 3. Normalize by copy number
 otus-normalized.biom: otus-qiime.biom
-	$(PICRUST)/normalize_by_copy_number.py \
+	$(PICRUST)/scripts/normalize_by_copy_number.py \
 		--gg_version '13_5' \
 		--input_otu_fp $< \
 		--output_otu_fp $@
@@ -59,7 +59,7 @@ predicted-metagenome.tab: predicted-metagenome.biom
 		--output-fp $@
 
 .PRECIOUS: predicted-metagenome-contributions.tab
-%-metagenome-contributions.tab: predicted-normalized.biom
+predicted-metagenome-contributions.tab: predicted-normalized.biom
 	$(PICRUST)/scripts/metagenome_contributions.py \
 		--input_otu_table $< \
 		--output_fp $@
