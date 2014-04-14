@@ -40,7 +40,7 @@ otus-qiime.biom: otus-qiime.tab
 .PRECIOUS: otus-normalized.biom
 # 3. Normalize by copy number
 otus-normalized.biom: otus-qiime.biom
-	$(PICRUST)/normalize_by_copy_number.py \
+	$(PICRUST)/scripts/normalize_by_copy_number.py \
 		--gg_version '13_5' \
 		--input_otu_fp $< \
 		--output_otu_fp $@
