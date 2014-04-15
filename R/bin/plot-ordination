@@ -6,7 +6,8 @@ option_list <- c(make_option('--input', type='character', default='/dev/stdin'),
                  make_option('--rank', type='character', default='OTU'),
                  make_option('--output', type='character', default='Rplots.pdf'),
                  make_option('--method', type='character', default='NMDS'),
-                 make_option('--distance', type='character', default='euclidean')
+                 make_option('--distance', type='character', default='euclidean'),
+                 make_option('--color', default='none')
                 )
 
 
@@ -24,4 +25,8 @@ glom <- tax_glom(dipp, taxrank = options$rank)
 
 ord <- ordinate(glom, options$method, options$distance)
 
-plot_ordination(glom, ord)
+if (options$color == 'none') {
+  plot_ordination(glom, ord)
+} else {
+  plot_ordination(glom, ord, color=options$color)
+}
