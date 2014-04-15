@@ -15,7 +15,7 @@ option_list <- c(make_option('--output', type='character', default='/dev/stdout'
                  make_option('--otutable', type='character'),
                  make_option('--metadata', type='character'),
                  make_option('--taxonomies', type='character'),
-                 make_option('--normalize', type='character'),
+                 make_option('--normalize', type='character', default='none'),
                  make_option('--tree', type='character'))
 
 parser <- OptionParser(option_list = option_list)
@@ -63,6 +63,8 @@ if (options$normalize == 'rarefaction') {
 } else if (options$normalize == 'edger') {
   cat('applying edgeR normalization\n')
   dipp <- edgeRnorm(dipp)
+} else {
+  dipp <- dipp
 }
 
 if (options$proportion == TRUE) {
