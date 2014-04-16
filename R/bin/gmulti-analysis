@@ -1,0 +1,57 @@
+#load data
+
+# by Raquel Dias
+
+table <- read.csv("samples-1.csv")
+table2 <- read.csv("dipp-bacteroides-species-9-april-2014-agdr.csv") 
+
+total <- cbind(table, subset(table2, table2$X %in% table$X, drop = TRUE))
+total$seroconverted <- as.logical(total$seroconverted)
+dorei_vulgatus <- total$dorei+total$vulgatus
+total <- cbind(total,dorei_vulgatus)
+
+library(glmulti)
+
+# Run the GLM with the genetic algorithm
+
+glmulti(y = "seroconverted", xr = c("intestinalis", "cellulosilyticus", 
+"coprocola", "clarus", "acidifaciens", "finegoldii", "nordii", 
+"gallinarum", "faecichinchillae", "fragilis", "thetaiotaomicron", 
+"stercorirosoris", "barnesiae", "heparinolyticus", "dorei_vulgatus"
+), data = total, exclude = 1, marginality = TRUE, level = 2, 
+    method = "g", family = binomial(link = "logit"))
+
+
+
+# Create function for running cross-validation
+
+CV <- function(model1, data) {   
+  cv <- NULL  
+  values <- matrix(NA, nrow = nrow(data), ncol = 2)
+
+  for (i in 1:nrow(data)) {
+
+    data2 <- data[-i, ]  # leave out one observation 
+   
+    model12 <- glm(model1$formula, family =  binomial("logit"), data = data2)       
+
+    values[i,1] <- round(predict(model12, newdata =  data[i, ] , type="response"))
+    values[i,2] <- round(as.logical(data$seroconverted[i]))
+
+  }
+     
+  cv <- sum(values[ ,1] == values[ ,2])/nrow(values)
+
+  print(cv)
+  return(cv)
+}
+
+
+# Run cross-validation for the best 100 models:
+
+for (a in 1:100) {
+  f <- glm(g1@objects[[a]]$formula, data=total, family = binomial("logit"))  
+  CV(f, total) 
+}
+ 
+
