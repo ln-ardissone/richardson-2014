@@ -6,8 +6,10 @@ default:
 
 
 # need to convert CSV files to "QIIME" CSV files
-richardson-2014.biom:
-	gzcat data/dipp-otus.csv.gz > temp.csv
+data/dipp-otus.csv:
+	gzcat data/dipp-otus.csv.gz > dipp-otus.csv
+
+richardson-2014.biom: dipp-otus.csv
 	biom convert \
 		--input-fp temp.csv \
 		--sample-metadata-fp=data/dipp-sample_data.csv \
