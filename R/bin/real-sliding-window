@@ -1,0 +1,35 @@
+#!/usr/bin/env rscript
+
+library(optparse)
+
+option_list <- c(make_option('--input', type='character', default='/dev/stdin'),
+                 make_option('--rank', type='character')
+                )
+
+parser <- OptionParser(option_list = option_list)
+options <- parse_args(parser)
+
+library(phyloseq)
+library(zoo)
+library(plyr)
+
+load(options$input)
+
+glom <- tax_glom(dipp, taxrank = options$rank)
+
+df <- psmelt(glom)
+
+start <- min(df$age_at_sampling)
+stop <- max(df$age_at_sampling)
+
+fake_df <- data.frame(age_at_sampling = start:stop)
+
+merged <- merge(fake_df, df, all=T)
+
+ddply(merged, ~Genus, function(d) {
+  ordered <- d[with(d, order(age_at_sampling)),]
+  print(ordered$Genus[1])
+
+  med <- rollmedian(ordered$Abundance, 101)
+  plot(med, main=ordered$Genus[1])
+})
