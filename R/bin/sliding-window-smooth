@@ -7,8 +7,10 @@ option_list <- c(make_option('--input', type='character', default='/dev/stdin'),
                  make_option('--cuts', type='numeric', default=12),
                  make_option('--top', type='numeric', default=12),
                  make_option('--output', type='character', default='Rplots.pdf'),
-                 make_option('--testmethod', default='wilcox')
+                 make_option('--testmethod', default='wilcox'),
+                 make_option('--fdr', default='none')
                 )
+
 
 
 parser <- OptionParser(option_list = option_list)
@@ -105,6 +107,13 @@ pdf(options$output)
 means <- ddply(smoothed.keep, ~name, function(x) c(mean=mean(x$mean)))
 
 smoothed.keep$age_at_sampling <- as.integer(as.character(smoothed.keep$age_at_sampling))
+
+# correct p-values for multiple hypothesis testing
+
+if (options$fdr == 'BY') {
+  cat('Performing BY correction\n')
+  smoothed.keep$pvalue <- sapply(smoothed.keep$pvalue, function(x) p.adjust(x, n = options$top))
+}
 
 ggplot(smoothed.keep,
        aes(x=age_at_sampling, y=mean, fill=factor(seroconverted, levels=c(1, 0), labels=c('Case', 'Control')))) +
