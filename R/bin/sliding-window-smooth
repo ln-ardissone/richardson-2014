@@ -113,10 +113,9 @@ if (options$fdr == 'BY') {
   cat('Performing BY correction\n')
   smoothed.keep$pvalue <- sapply(smoothed.keep$pvalue, function(x) p.adjust(x, n = options$top))
 } else if (options$fdr == 'qvalue') {
-  library(qvalue)
+  source('lib/qvalue.R')
   cat('Performing q-value correction\n')
-  cat('This corrects for total number of TESTS not TAXA\n')
-  smoothed.keep$pvalue <- qvalue(smoothed.keep$pvalue)
+  smoothed.keep$pvalue <- qvalue(smoothed.keep$pvalue, n=options$top)
 }
 
 ggplot(smoothed.keep,
