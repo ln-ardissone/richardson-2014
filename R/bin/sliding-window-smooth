@@ -109,10 +109,14 @@ means <- ddply(smoothed.keep, ~name, function(x) c(mean=mean(x$mean)))
 smoothed.keep$age_at_sampling <- as.integer(as.character(smoothed.keep$age_at_sampling))
 
 # correct p-values for multiple hypothesis testing
-
 if (options$fdr == 'BY') {
   cat('Performing BY correction\n')
   smoothed.keep$pvalue <- sapply(smoothed.keep$pvalue, function(x) p.adjust(x, n = options$top))
+} else if (options$fdr == 'qvalue') {
+  library(qvalue)
+  cat('Performing q-value correction\n')
+  cat('This corrects for total number of TESTS not TAXA\n')
+  smoothed.keep$pvalue <- qvalue(smoothed.keep$pvalue)
 }
 
 ggplot(smoothed.keep,

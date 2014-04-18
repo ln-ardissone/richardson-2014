@@ -37,7 +37,7 @@ dipp-rf-uniq-metagenome.RData:
 CUTS?=12
 
 sliding-window-%.pdf: dipp-rf-uniq.RData
-	bin/sliding-window-smooth --rank $* --output $@ --input $< --cuts $(CUTS) --top 12 --testmethod $(TESTMETHOD)
+	bin/sliding-window-smooth --rank $* --output $@ --input $< --cuts $(CUTS) --top 12 --testmethod $(TESTMETHOD) --fdr BY
 
 phyloseq: dipp-rf-uniq.RData
 
