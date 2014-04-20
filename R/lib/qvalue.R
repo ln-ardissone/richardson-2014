@@ -1,3 +1,5 @@
+#!/usr/bin/env rscript
+
 'qvalue' <- function (p = NULL, lambda = seq(0, 0.9, 0.05), pi0.method = "smoother",
     fdr.level = NULL, robust = FALSE, gui = FALSE, smooth.df = 3,
     smooth.log.pi0 = FALSE, n = NULL)
