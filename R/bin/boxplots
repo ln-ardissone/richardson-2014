@@ -18,6 +18,7 @@ options <- parse_args(parser)
 library(phyloseq)
 library(ggplot2)
 library(plyr)
+library(pander)
 
 load(options$input)
 
@@ -37,7 +38,12 @@ downsampled <- ddply(df, ~dipp_person + Phylum, function(d) {
   return(d)
 })
 
-head(downsampled)
+# statistical tests...
+tests <- ddply(downsampled, ~ Phylum, function(d) {
+  c(pvalue=wilcox.test(Abundance ~ seroconverted, data=d, exact=FALSE)$p.value)
+})
+
+pander(tests)
 
 source('./lib/ggplot_theme.R')
 
