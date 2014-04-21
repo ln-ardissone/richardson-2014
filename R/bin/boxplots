@@ -1,0 +1,39 @@
+#!/usr/bin/env rscript
+
+library(optparse)
+
+
+option_list <- c(make_option('--input', type='character', default='/dev/stdin'),
+                 make_option('--rank', type='character'),
+                 make_option('--top', type='numeric', default=12),
+                 make_option('--start', type='numeric'),
+                 make_option('--stop', type='numeric'),
+                 make_option('--output', type='character', default='Rplots.pdf')
+                )
+
+
+parser <- OptionParser(option_list = option_list)
+options <- parse_args(parser)
+
+library(phyloseq)
+library(ggplot2)
+
+load(options$input)
+
+subset1 <- subset_samples(dipp, age_at_sampling >= 0)
+subset <- subset_samples(dipp, age_at_sampling <= 500)
+
+glom <- tax_glom(subset, taxrank=options$rank)
+
+df <- psmelt(glom)
+
+source('./lib/ggplot_theme.R')
+
+ggplot(df,
+       aes_string(x=options$rank,
+                  y='Abundance',
+                  color='seroconverted')) +
+geom_boxplot() +
+coord_flip() +
+scale_y_log10() +
+ggplot.theme
