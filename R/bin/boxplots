@@ -17,6 +17,7 @@ options <- parse_args(parser)
 
 library(phyloseq)
 library(ggplot2)
+library(plyr)
 
 load(options$input)
 
@@ -27,9 +28,17 @@ glom <- tax_glom(subset, taxrank=options$rank)
 
 df <- psmelt(glom)
 
+# downsample per individual
+# TODO create ddply formula dynamically...
+downsampled <- ddply(df, ~dipp_person + Phylum, function(d) {
+  d[1,]
+})
+
+head(downsampled)
+
 source('./lib/ggplot_theme.R')
 
-ggplot(df,
+ggplot(downsampled,
        aes_string(x=options$rank,
                   y='Abundance',
                   color='seroconverted')) +
