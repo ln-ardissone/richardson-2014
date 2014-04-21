@@ -31,7 +31,10 @@ df <- psmelt(glom)
 # downsample per individual
 # TODO create ddply formula dynamically...
 downsampled <- ddply(df, ~dipp_person + Phylum, function(d) {
-  d[1,]
+  avg <- median(d$Abundance)
+  d <- d[1,]
+  d$Abundance <- avg
+  return(d)
 })
 
 head(downsampled)
@@ -39,10 +42,8 @@ head(downsampled)
 source('./lib/ggplot_theme.R')
 
 ggplot(downsampled,
-       aes_string(x=options$rank,
-                  y='Abundance',
-                  color='seroconverted')) +
+       aes_string(x='seroconverted',
+                  y='Abundance')) +
 geom_boxplot() +
-coord_flip() +
-scale_y_log10() +
+facet_wrap(~Phylum, scale='free_y') +
 ggplot.theme
