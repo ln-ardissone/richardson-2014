@@ -1,3 +1,5 @@
+#!/usr/bin/env rscript
+
 library(phyloseq)
 
 'load.dipp' <- function(otu.table=NULL, sam.data=NULL, tax.table=NULL, tree=NULL) {
