@@ -57,9 +57,13 @@ pander(tests)
 
 source('./lib/ggplot_theme.R')
 
+pdf(options$output)
+
 ggplot(downsampled,
        aes_string(x='seroconverted',
                   y='Abundance')) +
 geom_boxplot() +
 facet_wrap(as.formula(paste('~', options$rank)), scale='free_y') +
 ggplot.theme
+
+dev.off()
