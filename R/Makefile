@@ -68,6 +68,12 @@ rank_tables/%.csv: rank_tables
 
 tables: rank_tables/Phylum.csv rank_tables/Class.csv rank_tables/Order.csv rank_tables/Family.csv rank_tables/Genus.csv rank_tables/Species.csv
 
+# for qiime
+../data/qiime-mapping.csv: ../data/dipp-sample_data.csv
+	bin/generate-qiime-mapping \
+		--input $< \
+		--output $@
+
 clean:
 	rm *.RData
 	rm *.pdf

@@ -1,0 +1,33 @@
+#!/usr/bin/env rscript
+
+library(optparse)
+
+option_list <- c(make_option('--input', default='/dev/stdin'),
+                 make_option('--output', default='/dev/stdout')
+                )
+
+parser <- OptionParser(option_list = option_list)
+options <- parse_args(parser)
+
+dat <- read.csv(options$input)
+
+# these need to be the first columns
+# which is why we're adding them in a weird way
+# also, add them in reverse.
+
+df <- data.frame(SequencingRun = dat$HS_run)
+df <- data.frame(SequencingLane = dat$illumina_lane, df)
+
+df <- data.frame(LinkerPrimerSequence = c('GATC'), df)
+df <- data.frame(BarcodeSequence = dat$sequence, df)
+
+# has to be unique so if you sequenced the same sample
+# multiple times...
+df <- data.frame(SampleID = rownames(df), df)
+
+# no empty IDs
+
+# add at the END
+df$Description <- c('DESCRIPTION')
+
+write.table(df, sep="\t", quote=F, file=options$output, row.names=F)
