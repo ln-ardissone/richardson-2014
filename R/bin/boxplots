@@ -51,6 +51,8 @@ tests <- ddply(downsampled, form, function(d) {
   c(pvalue=wilcox.test(Abundance ~ seroconverted, data=d, exact=FALSE)$p.value)
 })
 
+tests$p.adjusted <- p.adjust(tests$pvalue, method='BY')
+
 pander(tests)
 
 source('./lib/ggplot_theme.R')
