@@ -30,6 +30,11 @@ dipp <- load.dipp(otu.table=options$otutable,
                   tax.table=options$taxonomies,
                   tree=options$tree)
 
+# remove single autoantibody cases
+dipp <- subset_samples(dipp, aa_number != 1)
+cat("Removing single autoantibody cases\n")
+dipp
+
 cat("Before uniquification\n")
 dipp
 
