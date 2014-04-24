@@ -6,6 +6,7 @@ TAXONOMIES?='../data/dipp-tax_table.csv'
 METAGENOME?='../data/dipp-predicted_metagenome.csv'
 METAGENOME_TAX?='../data/dipp-kegg_orthologies.csv'
 NORMALIZE?='edger'
+FDR?='BY'
 
 TESTMETHOD?='wilcox'
 
@@ -13,6 +14,16 @@ default: sliding_window picrust
 	echo 'done!'
 
 sliding_window: sliding-window-Phylum.pdf sliding-window-Class.pdf sliding-window-Order.pdf sliding-window-Family.pdf sliding-window-Genus.pdf sliding-window-Species.pdf
+
+boxplots: boxplot-Phylum.pdf boxplot-Class.pdf boxplot-Order.pdf boxplot-Family.pdf boxplot-Genus.pdf boxplot-Species.pdf
+
+boxplot-%.pdf: dipp-rf-uniq.RData
+	bin/boxplots \
+		--start 300 \
+		--stop 500 \
+		--rank $* \
+		--output $@ \
+		--input $<
 
 dipp-rf-uniq.RData:
 	bin/write-rdata \
@@ -37,7 +48,7 @@ dipp-rf-uniq-metagenome.RData:
 CUTS?=12
 
 sliding-window-%.pdf: dipp-rf-uniq.RData
-	bin/sliding-window-smooth --rank $* --output $@ --input $< --cuts $(CUTS) --top 12 --testmethod $(TESTMETHOD) --fdr BY
+	bin/sliding-window-smooth --rank $* --output $@ --input $< --cuts $(CUTS) --top 12 --testmethod $(TESTMETHOD) --fdr $(FDR)
 
 phyloseq: dipp-rf-uniq.RData
 
