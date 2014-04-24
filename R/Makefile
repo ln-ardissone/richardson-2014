@@ -52,7 +52,7 @@ ordination.pdf: dipp-rf-uniq.RData
 rank_tables:
 	mkdir -p rank_tables
 
-rank_tables/%.csv: rank_tables
+rank_tables/%.csv: rank_tables dipp-rf-uniq.RData
 	bin/make-rank-table --rank $* --output $@ --input dipp-rf-uniq.RData
 
 tables: rank_tables/Phylum.csv rank_tables/Class.csv rank_tables/Order.csv rank_tables/Family.csv rank_tables/Genus.csv rank_tables/Species.csv
