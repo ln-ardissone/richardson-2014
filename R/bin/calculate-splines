@@ -1,0 +1,38 @@
+#!/usr/bin/env rscript
+
+library(optparse)
+
+options <- c(make_option('--input'),
+             make_option('--output'))
+
+parser <- OptionParser(options)
+
+options <- parse_args(parser)
+
+library(phyloseq)
+library(plyr)
+
+load(options$input)
+
+phy <- tax_glom(dipp, taxrank='Phylum')
+
+# for each subject, for each OTU
+# fit a spline to y=OTU's abundance over x=age_at_sampling
+# predict abundance from min(age_at_sampling) to max(age_at_sampling)
+
+subjects <- unique(sample_data(phy)$dipp_person)
+otus <- taxa_names(phy)
+
+start <- min(sample_data(phy)$age_at_sampling)
+stop <- max(sample_data(phy)$age_at_sampling)
+range <- start:stop
+
+for (subject in subjects) {
+  ss1 <- subset_samples(phy, dipp_person == subject)
+  for (otu in otus) {
+    ss2 <- prune_taxa(otu, ss1)
+    y <- otu_table(ss2)[,1]
+    x <- sample_data(ss2)$age_at_sampling
+    spline <- smooth.spline(x, y=y)
+  }
+}
