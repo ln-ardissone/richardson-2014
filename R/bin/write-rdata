@@ -44,8 +44,12 @@ cat("Removed single autoantibody cases\n")
 dipp
 br()
 
+n_contaminated <- nrow(sample_data(subset_samples(dipp, contaminated == TRUE)))
+cat(paste("Found", n_contaminated, "contaminated samples.\n"))
 
-cat("Before uniquification\n")
+# remove contaminated samples
+dipp <- subset_samples(dipp, contaminated == FALSE)
+cat("Removed contaminated samples\n")
 dipp
 br()
 
