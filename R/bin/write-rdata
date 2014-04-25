@@ -25,18 +25,29 @@ options <- parse_args(parser)
 suppressMessages(suppressWarnings(source('./lib/load_dipp.R')))
 suppressMessages(suppressWarnings(source('./lib/normalize.R')))
 
+br <- function() cat("\n")
+
 dipp <- load.dipp(otu.table=options$otutable,
                   sam.data=options$metadata,
                   tax.table=options$taxonomies,
                   tree=options$tree)
 
-# remove single autoantibody cases
-dipp <- subset_samples(dipp, aa_number != 1)
-cat("Removing single autoantibody cases\n")
+cat("Loaded all samples\n")
 dipp
+br()
+
+# remove single autoantibody cases
+n_single <- nrow(sample_data(subset_samples(dipp, aa_number == 1)))
+cat(paste("Found", n_single, "single autoantibody subjects\n"))
+dipp <- subset_samples(dipp, aa_number != 1)
+cat("Removed single autoantibody cases\n")
+dipp
+br()
+
 
 cat("Before uniquification\n")
 dipp
+br()
 
 if (options$unique == TRUE) {
   library(plyr)
@@ -56,11 +67,12 @@ if (options$unique == TRUE) {
 
   # put back rownames.
   rownames(uniqued) <- uniqued$illumina_id
-  dipp <- phyloseq(sam_data(uniqued), otu_table(dipp), tax_table(dipp))
+  dipp <- phyloseq(sample_data(uniqued), otu_table(dipp), tax_table(dipp))
 }
 
-cat("Before rarefaction\n")
+cat("After uniquifying by dipp_person\n")
 dipp
+br()
 
 if (options$normalize == 'rarefaction') {
   cat('rarefying\n')
@@ -72,12 +84,18 @@ if (options$normalize == 'rarefaction') {
   dipp <- dipp
 }
 
+cat("After normalization\n")
+dipp
+br()
+
 if (options$proportion == TRUE) {
   cat('applying proportion\n')
   dipp <- transform_sample_counts(dipp, function(x) x/sum(x))
 }
 
-cat("After normalization\n")
+cat("Final object\n")
 dipp
+br()
 
+cat(paste("Saving to", options$output, "\n"))
 save(dipp, file=options$output)
