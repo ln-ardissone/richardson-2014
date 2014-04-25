@@ -51,7 +51,7 @@ br()
 
 if (options$unique == TRUE) {
   library(plyr)
-  meta <- data.frame(sam_data(dipp), check.names=F)
+  meta <- data.frame(sample_data(dipp), check.names=F)
 
   # ddply drops rownames.
   meta$illumina_id <- rownames(meta)
