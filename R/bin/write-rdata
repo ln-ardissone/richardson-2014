@@ -37,9 +37,7 @@ dipp
 br()
 
 # remove single autoantibody cases
-n_single <- nrow(sample_data(subset_samples(dipp, aa_number == 1)))
-cat(paste("Found", n_single, "single autoantibody subjects\n"))
-dipp <- subset_samples(dipp, aa_number != 1)
+dipp <- subset_samples(dipp, aa_count != 1)
 cat("Removed single autoantibody cases\n")
 dipp
 br()
