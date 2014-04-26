@@ -6,8 +6,12 @@ option_list <- c(make_option('--input', type='character', default='/dev/stdin'),
                  make_option('--rank', type='character')
                 )
 
+source('lib/qvalue.R')
+
 parser <- OptionParser(option_list = option_list)
 options <- parse_args(parser)
+
+se <- function(x) sd(x)/sqrt(length(x))
 
 library(phyloseq)
 library(zoo)
@@ -19,17 +23,48 @@ glom <- tax_glom(dipp, taxrank = options$rank)
 
 df <- psmelt(glom)
 
+# rollapply assumes that samples are the equidistant
+# in time from each other. We fill in the missing days
+# so that sliding windows are actually the same length
+# in time.
+
 start <- min(df$age_at_sampling)
 stop <- max(df$age_at_sampling)
-
 fake_df <- data.frame(age_at_sampling = start:stop)
 
 merged <- merge(fake_df, df, all=T)
 
-ddply(merged, ~Genus, function(d) {
+# calculate rolling median and rolling standard error
+smoothed <- ddply(merged, ~Phylum + seroconverted, function(d) {
   ordered <- d[with(d, order(age_at_sampling)),]
-  print(ordered$Genus[1])
 
-  med <- rollmedian(ordered$Abundance, 101)
-  plot(med, main=ordered$Genus[1])
+  med <- data.frame(rollapply(ordered$Abundance, options$window_width, function(x) {
+                   c(abundance=median(x), abundance.se=se(x))
+  }))
+
+  age <- data.frame(rollapply(ordered$age_at_sampling, options$window_width, function(x) {
+                   c(age=median(x), age.se=se(x))
+  }))
+
+  return(cbind(med, age))
 })
+
+
+# plot it!
+
+smoothed <- smoothed[complete.cases(smoothed),]
+
+ggplot(smoothed,
+       aes(x=age,
+           y=abundance,
+           color=Phylum)) +
+geom_point() +
+facet_wrap(~seroconverted)
+
+gplot(smoothed,
+       aes(x=age,
+           y=abundance,
+           fill=seroconverted)) +
+facet_wrap(~Phylum, scale='free_y') +
+geom_ribbon(aes(ymin = abundance - abundance.se, ymax= abundance + abundance.se), alpha=0.5) +
+xlim(min(smoothed$age), 600)
