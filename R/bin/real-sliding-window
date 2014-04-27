@@ -2,8 +2,9 @@
 
 library(optparse)
 
-option_list <- c(make_option('--input', type='character', default='/dev/stdin'),
-                 make_option('--rank', type='character')
+option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.RData'),
+                 make_option('--rank', type='character', default='Phylum'),
+                 make_option('--width', type='numeric', default=51)
                 )
 
 source('lib/qvalue.R')
@@ -16,6 +17,7 @@ se <- function(x) sd(x)/sqrt(length(x))
 library(phyloseq)
 library(zoo)
 library(plyr)
+library(ggplot2)
 
 load(options$input)
 
@@ -23,26 +25,29 @@ glom <- tax_glom(dipp, taxrank = options$rank)
 
 df <- psmelt(glom)
 
-# rollapply assumes that samples are the equidistant
-# in time from each other. We fill in the missing days
-# so that sliding windows are actually the same length
-# in time.
-
-start <- min(df$age_at_sampling)
-stop <- max(df$age_at_sampling)
-fake_df <- data.frame(age_at_sampling = start:stop)
-
-merged <- merge(fake_df, df, all=T)
+# do this if you want equal-sized windows
+# TODO make this optional.
+# --equal_windows or something...
+#start <- min(df$age_at_sampling)
+#stop <- max(600)
+#fake_df <- data.frame(age_at_sampling = start:stop)
+#merged <- merge(fake_df, df, all=T)
 
 # calculate rolling median and rolling standard error
-smoothed <- ddply(merged, ~Phylum + seroconverted, function(d) {
-  ordered <- d[with(d, order(age_at_sampling)),]
+# for each OTU at Rank
 
-  med <- data.frame(rollapply(ordered$Abundance, options$window_width, function(x) {
+# sort by age
+df <- df[with(df, order(age_at_sampling)),]
+
+
+smoothed <- ddply(df, ~ Phylum + seroconverted, function(d) {
+  downsampled <- downsample(d)
+
+  med <- data.frame(rollapply(d$Abundance, options$width, function(x) {
                    c(abundance=median(x), abundance.se=se(x))
   }))
 
-  age <- data.frame(rollapply(ordered$age_at_sampling, options$window_width, function(x) {
+  age <- data.frame(rollapply(d$age_at_sampling, options$width, function(x) {
                    c(age=median(x), age.se=se(x))
   }))
 
@@ -59,9 +64,9 @@ ggplot(smoothed,
            y=abundance,
            color=Phylum)) +
 geom_point() +
-facet_wrap(~seroconverted)
+facet_grid(seroconverted ~ .)
 
-gplot(smoothed,
+ggplot(smoothed,
        aes(x=age,
            y=abundance,
            fill=seroconverted)) +
