@@ -63,7 +63,7 @@ form <- parse(text=paste('~', options$rank))
 
 smoothed <- ddply(n, eval(form), function(d) {
   data.frame(rollapply(rownames(d), options$width, function(i) {
-    ss <- d[i,]
+    ss <- d[i,] # the slow part! (fixme)
     print(range(ss$age_at_sampling))
 
     downsampled <- ddply(ss, ~ dipp_person, function(y) {
