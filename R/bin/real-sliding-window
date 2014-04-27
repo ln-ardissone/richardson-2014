@@ -1,0 +1,98 @@
+#!/usr/bin/env rscript
+
+library(optparse)
+
+option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.RData'),
+                 make_option('--rank', type='character', default='Phylum'),
+                 make_option('--width', type='numeric', default=51)
+                )
+
+source('lib/qvalue.R')
+
+parser <- OptionParser(option_list = option_list)
+options <- parse_args(parser)
+
+se <- function(x) {
+  if (length(x) == 1) {
+    0
+  } else {
+    sd(x)/sqrt(length(x))
+  }
+}
+
+library(phyloseq)
+library(zoo)
+library(plyr)
+library(ggplot2)
+
+load(options$input)
+
+glom <- tax_glom(dipp, taxrank = options$rank)
+
+df <- psmelt(glom)
+
+# do this if you want equal-sized windows
+# TODO make this optional.
+# --equal_windows or something...
+#start <- min(df$age_at_sampling)
+#stop <- max(600)
+#fake_df <- data.frame(age_at_sampling = start:stop)
+#merged <- merge(fake_df, df, all=T)
+
+# calculate rolling median and rolling standard error
+# for each OTU at Rank
+
+# sort by age
+df <- df[with(df, order(age_at_sampling)),]
+
+n <- df[,c('age_at_sampling',
+        'Phylum',
+        'seroconverted',
+        'dipp_person',
+        'Abundance')]
+
+n <- n[n$Phylum == 'Bacteroidetes',]
+
+
+smoothed <- ddply(n, ~ Phylum, function(d) {
+  data.frame(rollapply(rownames(d), options$width, function(i) {
+    ss <- d[i,]
+    print(range(ss$age_at_sampling))
+
+    downsampled <- ddply(ss, ~ dipp_person, function(y) {
+      c(Abundance=median(y$Abundance),
+        age_at_sampling=median(y$age_at_sampling),
+        seroconverted=y[1,]$seroconverted)
+    })
+
+    p.value <- wilcox.test(Abundance ~ seroconverted, data=downsampled, exact=FALSE)$p.value
+
+    averaged <- ddply(downsampled, ~ seroconverted, function(y) {
+          c(abundance=median(y$Abundance),
+            abundance.se=se(y$Abundance),
+            age=median(y$age_at_sampling))
+    })
+    averaged$p.value <- p.value
+    return(averaged)
+  }))
+})
+
+# plot it!
+
+smoothed <- smoothed[complete.cases(smoothed),]
+
+ggplot(smoothed,
+       aes(x=age,
+           y=abundance,
+           color=Phylum)) +
+geom_point() +
+facet_grid(seroconverted ~ .)
+
+ggplot(smoothed,
+       aes(x=age,
+           y=abundance,
+           fill=as.factor(seroconverted))) +
+facet_wrap(~Phylum, scale='free_y') +
+geom_ribbon(aes(ymin = abundance - abundance.se, ymax= abundance + abundance.se), alpha=0.5) +
+geom_rug(aes(color=p.value < 0.05), sides='b') +
+xlim(min(smoothed$age), 600)
