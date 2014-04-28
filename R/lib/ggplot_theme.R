@@ -1,3 +1,4 @@
+#!/usr/bin/env rscript
 library(ggplot2)
 
 
