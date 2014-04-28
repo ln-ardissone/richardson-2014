@@ -16,6 +16,13 @@ default: sliding_window picrust
 
 sliding_window: sliding-window-Phylum.pdf sliding-window-Class.pdf sliding-window-Order.pdf sliding-window-Family.pdf sliding-window-Genus.pdf sliding-window-Species.pdf
 
+sliding-window-diversity.pdf: dipp-for-richness.RData
+	bin/sliding-window-diversity \
+		--input $< \
+		--output $@ \
+		--width 200 \
+		--method Shannon
+
 boxplots: boxplot-Phylum.pdf boxplot-Class.pdf boxplot-Order.pdf boxplot-Family.pdf boxplot-Genus.pdf boxplot-Species.pdf
 
 boxplot-%.pdf: dipp-rf-uniq.RData
@@ -32,6 +39,15 @@ dipp-rf-uniq.RData:
 		--output $@ \
 		--normalize $(NORMALIZE) \
 		--proportion \
+		--otutable $(OTUTABLE) \
+		--metadata $(METADATA) \
+		--taxonomies $(TAXONOMIES)
+
+dipp-for-richness.RData:
+	bin/write-rdata \
+		--unique \
+		--output $@ \
+		--normalize rarefaction \
 		--otutable $(OTUTABLE) \
 		--metadata $(METADATA) \
 		--taxonomies $(TAXONOMIES)
