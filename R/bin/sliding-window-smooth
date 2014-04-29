@@ -10,17 +10,10 @@ option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.
                 )
 
 source('lib/qvalue.R')
+source('lib/se.R')
 
 parser <- OptionParser(option_list = option_list)
 options <- parse_args(parser)
-
-se <- function(x) {
-  if (length(x) == 1) {
-    0
-  } else {
-    sd(x)/sqrt(length(x))
-  }
-}
 
 library(phyloseq)
 library(zoo)
