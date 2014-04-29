@@ -1,26 +1,48 @@
-#load data
+# by Raquel Dias and Austin G. Davis-Richardson
 
-# by Raquel Dias
+library(optparse)
 
-table <- read.csv("samples-1.csv")
-table2 <- read.csv("dipp-bacteroides-species-9-april-2014-agdr.csv") 
+option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.RData'),
+                 make_option('--rank', type='character', default='Phylum')
+                 )
 
-total <- cbind(table, subset(table2, table2$X %in% table$X, drop = TRUE))
-total$seroconverted <- as.logical(total$seroconverted)
-dorei_vulgatus <- total$dorei+total$vulgatus
-total <- cbind(total,dorei_vulgatus)
+parser <- OptionParser(option_list = option_list)
+options <- parse_args(parser)
 
+library(phyloseq)
 library(glmulti)
+
+load(options$input)
+
+glom <- tax_glom(dipp, taxrank=options$rank)
+
+table <- data.frame(sample_data(glom))
+table2 <- data.frame(otu_table(glom), check.names=F)
+
+taxa_names <- data.frame(tax_table(glom))[,options$rank]
+
+colnames(table2) <- taxa_names
+
+total <- table2
+total$seroconverted <- as.logical(table$seroconverted)
+
+#dorei_vulgatus <- total$dorei+total$vulgatus
+#total <- cbind(total,dorei_vulgatus)
+
 
 # Run the GLM with the genetic algorithm
 
-glmulti(y = "seroconverted", xr = c("intestinalis", "cellulosilyticus", 
-"coprocola", "clarus", "acidifaciens", "finegoldii", "nordii", 
-"gallinarum", "faecichinchillae", "fragilis", "thetaiotaomicron", 
-"stercorirosoris", "barnesiae", "heparinolyticus", "dorei_vulgatus"
-), data = total, exclude = 1, marginality = TRUE, level = 2, 
-    method = "g", family = binomial(link = "logit"))
+XR <- as.character(taxa_names)
 
+g1 <- glmulti(
+        y = "seroconverted",
+        xr = XR,              # variables to include in model
+        data = total,         # data
+        marginality = TRUE,
+        level = 1, 
+        method = "g",
+        family = binomial(link = "logit")
+        )
 
 
 # Create function for running cross-validation
@@ -28,24 +50,16 @@ glmulti(y = "seroconverted", xr = c("intestinalis", "cellulosilyticus",
 CV <- function(model1, data) {   
   cv <- NULL  
   values <- matrix(NA, nrow = nrow(data), ncol = 2)
-
   for (i in 1:nrow(data)) {
-
     data2 <- data[-i, ]  # leave out one observation 
-   
     model12 <- glm(model1$formula, family =  binomial("logit"), data = data2)       
-
     values[i,1] <- round(predict(model12, newdata =  data[i, ] , type="response"))
     values[i,2] <- round(as.logical(data$seroconverted[i]))
-
   }
-     
   cv <- sum(values[ ,1] == values[ ,2])/nrow(values)
-
   print(cv)
   return(cv)
 }
-
 
 # Run cross-validation for the best 100 models:
 
@@ -53,5 +67,3 @@ for (a in 1:100) {
   f <- glm(g1@objects[[a]]$formula, data=total, family = binomial("logit"))  
   CV(f, total) 
 }
- 
-
