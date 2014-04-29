@@ -1,119 +1,112 @@
-#!/usr/bin/env Rscript
+#!/usr/bin/env rscript
 
 library(optparse)
 
-option_list <- c(make_option('--input', type='character', default='/dev/stdin'),
-                 make_option('--rank', type='character'),
-                 make_option('--cuts', type='numeric', default=12),
-                 make_option('--top', type='numeric', default=12),
-                 make_option('--output', type='character', default='Rplots.pdf'),
-                 make_option('--testmethod', default='wilcox')
+option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.RData'),
+                 make_option('--rank', type='character', default='Phylum'),
+                 make_option('--width', type='numeric', default=51),
+                 make_option('--output', type='character', default='RPlots.pdf'),
+                 make_option('--top', type='numeric', default=12)
                 )
 
+source('lib/qvalue.R')
 
 parser <- OptionParser(option_list = option_list)
 options <- parse_args(parser)
 
-#
-# Define hypothesis testing method.
-#
-if (options$testmethod == 'wilcox') {
-  test_fun <- function(x) wilcox.test(value ~ seroconverted, data=x, exact=FALSE)$p.value
-} else if (options$testmethod== 'ttest') {
-  test_fun <- function(x) permTS(value ~ seroconverted, data=x)$p.value
-} else {
-  cat(paste("I don't know this test:", options$testmethod, "\n"))
-  exit()
+se <- function(x) {
+  if (length(x) == 1) {
+    0
+  } else {
+    sd(x)/sqrt(length(x))
+  }
 }
 
-cat(paste('Using', options$testmethod, 'for hypothesis testing\n'))
-
 library(phyloseq)
-library(ggplot2)
+library(zoo)
 library(plyr)
-library(reshape2)
-library(perm)
-
-source('lib/ggplot_theme.R')
-
-FACTORS <- c('seroconverted')
-CUTS <- options$cuts
-TOP <- options$top
-FORMULA <- ~ seroconverted + age_at_sampling
-TAX_RANK <- options$rank
-
-se <- function(x) sd(x)/sqrt(length(x))
+library(ggplot2)
 
 load(options$input)
 
-ss <- subset_samples(dipp, age_at_sampling <= 600)
+glom <- tax_glom(dipp, taxrank = options$rank)
 
-dipp.glom <- tax_glom(ss, taxrank=TAX_RANK)
+form <- parse(text=paste(options$rank, '%in%', 'names(top_phy)'))
 
-meta <- data.frame(sample_data(dipp.glom))
+top_phy <- sort(tapply(taxa_sums(glom), tax_table(glom)[, options$rank], sum), decreasing=TRUE)[1:options$top]
+glom <- subset_taxa(glom, eval(form))
 
-if( taxa_are_rows(dipp.glom) ) {
-  otus <- data.frame(t(otu_table(dipp.glom)), check.names=F)
-} else {
-  otus <- data.frame(otu_table(dipp.glom), check.names=F)
-}
-taxa <- data.frame(tax_table(dipp.glom))
+df <- psmelt(glom)
 
-meta$group <- cut(meta$age_at_sampling,
-                  breaks=CUTS,
-                  labels=1:CUTS)
+# do this if you want equal-sized windows
+# TODO make this optional.
+# --equal_windows or something...
+#start <- min(df$age_at_sampling)
+#stop <- max(600)
+#fake_df <- data.frame(age_at_sampling = start:stop)
+#merged <- merge(fake_df, df, all=T)
 
-vars <- all.vars(FORMULA)
+# calculate rolling median and rolling standard error
+# for each OTU at Rank
 
-for (var in c(vars, 'dipp_person', 'group')) otus[,var] <- meta[,var]
+# sort by age
+df <- df[with(df, order(age_at_sampling)),]
 
-mdat <- melt(otus, c(vars, 'dipp_person', 'group'))
+n <- df[,c('age_at_sampling',
+        options$rank,
+        'seroconverted',
+        'dipp_person',
+        'Abundance')]
 
-averaged <- ddply(mdat, ~group+dipp_person+variable, function(x) {
-  c(seroconverted=x$seroconverted[1],
-    age_at_sampling=mean(x$age_at_sampling),
-    varable=x$variable[1],
-    value=mean(x$value),
-    group=x$group[1])
+
+form <- parse(text=paste('~', options$rank))
+
+smoothed <- ddply(n, eval(form), function(d) {
+  data.frame(rollapply(rownames(d), options$width, function(i) {
+    ss <- d[i,] # the slow part! (fixme)
+    print(range(ss$age_at_sampling))
+
+    downsampled <- ddply(ss, ~ dipp_person, function(y) {
+      c(Abundance=median(y$Abundance),
+        age_at_sampling=median(y$age_at_sampling),
+        seroconverted=y[1,]$seroconverted)
+    })
+
+    p.value <- wilcox.test(Abundance ~ seroconverted, data=downsampled, exact=FALSE)$p.value
+
+    averaged <- ddply(downsampled, ~ seroconverted, function(y) {
+          c(abundance=median(y$Abundance),
+            abundance.se=se(y$Abundance),
+            age=median(y$age_at_sampling))
+    })
+    averaged$p.value <- p.value
+    return(averaged)
+  }))
 })
 
-
-smoothed <- ddply(averaged, ~ seroconverted + group + variable, function(x) {
-  c(age_at_sampling=mean(x$age_at_sampling), mean=mean(x$value), se=se(x$value))
-})
-
-pvalues <- ddply(averaged, ~ group + variable, function(x) c(pvalue=test_fun(x)))
-
-smoothed <- merge(smoothed, pvalues)
-
-smoothed$name <- taxa[smoothed$variable,][,TAX_RANK]
-
-avg <- ddply(mdat, ~variable, function(x) c(mean=mean(x$value)))
-
-keep <- avg[with(avg, order(-mean)),][1:TOP,]$variable
-
-smoothed.keep <- smoothed[smoothed$variable %in% keep,]
-
-ggplot.pal.scale <- scale_fill_manual(values=c("#FFAB00", # cases
-                                             "#999999"), # controls
-                                          name='Status'
-                                        )
-
+# plot it!
 
 pdf(options$output)
 
-means <- ddply(smoothed.keep, ~name, function(x) c(mean=mean(x$mean)))
+smoothed$seroconverted <- as.factor(smoothed$seroconverted)
+smoothed <- smoothed[complete.cases(smoothed),]
 
-smoothed.keep$age_at_sampling <- as.integer(as.character(smoothed.keep$age_at_sampling))
+ggplot(smoothed,
+       aes_string(x='age',
+                  y='abundance',
+                  color=options$rank)) +
+geom_point() +
+facet_grid(seroconverted ~ .)
 
-ggplot(smoothed.keep,
-       aes(x=age_at_sampling, y=mean, fill=factor(seroconverted, levels=c(1, 0), labels=c('Case', 'Control')))) +
-facet_wrap(~name, scale='free_y') +
-geom_ribbon(aes(ymin=mean - se, ymax=mean + se), width=0, alpha=0.5) +
-xlab('Age at Sampling (days)') +
-ylab('Relative Abundance') +
-ggplot.pal.scale +
-ggplot.theme +
-geom_rug(aes(x=age_at_sampling, color=pvalue < 0.05), sides='b')
+form <- parse(text=paste('~', options$rank))
+
+ggplot(smoothed,
+       aes_string(x='age',
+           y='abundance',
+           fill='seroconverted')) +
+facet_wrap(eval(form), scale='free_y') +
+geom_ribbon(aes(ymin = abundance - abundance.se, ymax= abundance + abundance.se), alpha=0.5) +
+geom_rug(aes(color=p.value < 0.05), sides='b') +
+xlim(min(smoothed$age), 600)
 
 dev.off()

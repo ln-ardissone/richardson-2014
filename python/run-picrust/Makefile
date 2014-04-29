@@ -42,8 +42,25 @@ otus-qiime.biom: otus-qiime.tab
 otus-normalized.biom: otus-qiime.biom
 	$(PICRUST)/scripts/normalize_by_copy_number.py \
 		--gg_version '13_5' \
+		--input_count_fp 16S_13_5_precalculated.tab.gz \
 		--input_otu_fp $< \
 		--output_otu_fp $@
+
+# Convert normalized OTU table to QIIME tab format
+.PRECIOUS: otus-normalized.tab
+otus-normalized.tab: otus-normalized.biom
+	biom convert \
+		--biom-to-classic-table \
+		--input-fp $< \
+		--output-fp $@
+
+# Convert QIIME Tab table to CSV
+.PRECIOUS: otus-normalized.csv
+otus-normalized.csv: otus-normalized.tab
+	./qiime-to-csv.py \
+		< $< \
+		> $@
+
 
 .PRECIOUS: predicted-metagenome.biom
 predicted-metagenome.biom: otus-normalized.biom
