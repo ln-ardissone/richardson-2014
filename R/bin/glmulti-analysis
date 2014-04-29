@@ -1,3 +1,5 @@
+#!/usr/bin/env rscript
+
 # by Raquel Dias and Austin G. Davis-Richardson
 
 library(optparse)
