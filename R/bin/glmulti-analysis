@@ -5,28 +5,51 @@
 library(optparse)
 
 option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.RData'),
-                 make_option('--rank', type='character', default='Phylum')
+                 make_option('--rank', type='character', default='Phylum'),
+                 make_option('--top', type='numeric', default=12),
+                 make_option('--min_age', type='numeric', default=0),
+                 make_option('--max_age', type='numeric', default=3000)
                  )
 
 parser <- OptionParser(option_list = option_list)
 options <- parse_args(parser)
 
 library(phyloseq)
-library(glmulti)
+library(plyr)
 
 load(options$input)
 
-glom <- tax_glom(dipp, taxrank=options$rank)
+dipp <- tax_glom(dipp, taxrank=options$rank)
 
-table <- data.frame(sample_data(glom))
-table2 <- data.frame(otu_table(glom), check.names=F)
+# subset by age range
+ss1 <- subset_samples(dipp, age_at_sampling <= 300)
+ss2 <- subset_samples(ss1, age_at_sampling >= 150)
+dipp <- ss2
 
-taxa_names <- data.frame(tax_table(glom))[,options$rank]
+# get top n taxa
+form <- parse(text=paste(options$rank, '%in%', 'names(top_phy)'))
+top_phy <- sort(tapply(taxa_sums(dipp), tax_table(dipp)[, options$rank], sum), decreasing=TRUE)[1:options$top]
+dipp <- subset_taxa(dipp, eval(form))
 
-colnames(table2) <- taxa_names
+meta <- data.frame(sample_data(dipp))
+otus <- data.frame(otu_table(dipp), check.names=F)
 
-total <- table2
-total$seroconverted <- as.logical(table$seroconverted)
+taxa_names <- make.names(data.frame(tax_table(dipp))[,options$rank])
+
+colnames(otus) <- taxa_names
+
+dat <- otus
+
+dat$dipp_person <- meta$dipp_person
+dat$seroconverted <- meta$seroconverted
+
+# downsample by person id
+downsampled <- ddply(dat, ~ dipp_person +seroconverted, function(x) {
+      colMeans(x[,!colnames(x) %in% c('dipp_person', 'seroconverted')])
+})
+
+
+library(glmulti)
 
 #dorei_vulgatus <- total$dorei+total$vulgatus
 #total <- cbind(total,dorei_vulgatus)
@@ -39,7 +62,7 @@ XR <- as.character(taxa_names)
 g1 <- glmulti(
         y = "seroconverted",
         xr = XR,              # variables to include in model
-        data = total,         # data
+        data = downsampled,         # data
         marginality = TRUE,
         level = 1, 
         method = "g",
@@ -59,13 +82,18 @@ CV <- function(model1, data) {   
     values[i,2] <- round(as.logical(data$seroconverted[i]))
   }
   cv <- sum(values[ ,1] == values[ ,2])/nrow(values)
-  print(cv)
   return(cv)
 }
 
 # Run cross-validation for the best 100 models:
 
+cv_scores <- c()
+
 for (a in 1:100) {
-  f <- glm(g1@objects[[a]]$formula, data=total, family = binomial("logit"))  
-  CV(f, total) 
+  f <- glm(g1@objects[[a]]$formula, data=downsampled, family = binomial("logit"))  
+  score <- CV(f, downsampled) 
+  cv_scores <- c(score, cv_scores)
+  cat(paste('model', a, '-', score, '\n'))
 }
+
+cat(paste('best score:', max(cv_scores), '\n'))
