@@ -1,3 +1,5 @@
+#!/usr/bin/env rscript
+
 # lifted from: http://joey711.github.io/waste-not-supplemental/simulation-cluster-accuracy/simulation-cluster-accuracy-server.html
 edgeRnorm = function(physeq, ...) {
     require("edgeR")
