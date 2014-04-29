@@ -2,7 +2,7 @@
 
 OTUTABLE?='../data/dipp-otus_filtered.csv'
 METADATA?='../data/dipp-sample_data.csv'
-TAXONOMIES?='../data/dipp-tax_table.csv'
+TAXONOMIES?='../data/dipp-tax_table-merged_bacteroides.csv'
 METAGENOME?='../data/dipp-predicted_metagenome.csv'
 METAGENOME_TAX?='../data/dipp-kegg_orthologies.csv'
 NORMALIZE?='edger'
