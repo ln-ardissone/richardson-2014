@@ -51,10 +51,6 @@ downsampled <- ddply(dat, ~ dipp_person +seroconverted, function(x) {
 
 library(glmulti)
 
-#dorei_vulgatus <- total$dorei+total$vulgatus
-#total <- cbind(total,dorei_vulgatus)
-
-
 # Run the GLM with the genetic algorithm
 
 XR <- as.character(taxa_names)
