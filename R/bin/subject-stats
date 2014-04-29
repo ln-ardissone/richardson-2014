@@ -5,6 +5,8 @@ library(phyloseq)
 
 load('dipp-rarefied-phyloseq.RData')
 
+source('lib/se.R')
+
 meta <- data.frame(dipp@sam_data)
 
 sorted <- meta[with(meta, order(age_at_sampling)),]

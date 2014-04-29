@@ -18,8 +18,7 @@ library(reshape2)
 
 source('lib/ggplot_theme.R')
 source('lib/generate_subsets.R')
-
-se <- function(x) sd(x)/sqrt(length(x))
+source('lib/se.R')
 
 load(options$input)
 
