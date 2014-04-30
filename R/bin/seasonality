@@ -1,0 +1,80 @@
+#!/usr/bin/env rscript
+
+library(optparse)
+
+option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.RData'),
+                 make_option('--output', type='character', default='Rplots.pdf'),
+                 make_option('--rank', type='character', default='Species')
+                )
+
+parser <- OptionParser(option_list = option_list)
+options <- parse_args(parser)
+
+library(phyloseq)
+library(ggplot2)
+library(plyr)
+library(reshape2)
+library(lubridate)
+
+load(options$input)
+
+glom <- tax_glom(dipp, taxrank=options$rank)
+
+otus <- data.frame(otu_table(glom))
+meta <- data.frame(sample_data(glom))
+
+taxa_names <- make.names(data.frame(tax_table(glom))[,options$rank])
+
+colnames(otus) <- taxa_names
+
+dat <- cbind(otus, meta)
+
+dat$month <- as.numeric(format(as.Date(dat$sample_date, '%m/%d/%y'), '%m'))
+
+dat$season <- 'Winter'
+
+dat[dat$month %in% 5:9,]$season <- 'Summer'
+
+ggplot(dat[dat$age_at_sampling >= 150 & dat$age_at_sampling <= 300,],
+       aes(x=seroconverted,
+           y=dorei.vulgatus,
+           fill=season)) +
+geom_boxplot() +
+scale_y_log10()
+
+m <- glm(month ~ dorei.vulgatus*seroconverted, data=dat)
+
+anova(m, test='Chisq')
+
+# seasonality of appearance of autoantibodies
+
+uniq <- ddply(meta, ~ dipp_person, function(x) x[1,])
+
+cols <- c('date_GADA',
+          'date_ICA',
+          'date_IAA',
+          'date_IA2A',
+          'date_first_sc',
+          'date_second_sc',
+          'date_third_sc',
+          'date_fourth_sc',
+          'date_T1D',
+          'DOB')
+
+for (c in cols) uniq[,c] <- as.Date(uniq[,c], '%m/%d/%y')
+
+# melt coerces Date to numeric ???
+mdat <- melt(sapply(uniq[,c('date_GADA', 'date_IA2A', 'date_ICA', 'date_IAA', 'date_T1D')], month))
+
+ggplot(mdat[,],
+       aes(x=value,
+           fill=Var2)) +
+geom_bar(position='dodge') +
+xlab('Month') +
+ylab('Count') +
+scale_x_continuous(breaks=1:12)
+
+ggplot(uniq,
+       aes(x=month(uniq$DOB),
+           fill=seroconverted)) +
+geom_bar(position='dodge')
