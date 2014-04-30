@@ -79,7 +79,7 @@ smoothed <- ddply(n, eval(form), function(d) {
 
 # plot it!
 
-pdf(options$output)
+pdf(options$output, 8, 10, colormodel='cmyk')
 
 smoothed$seroconverted <- as.factor(smoothed$seroconverted)
 smoothed <- smoothed[complete.cases(smoothed),]
