@@ -4,7 +4,8 @@ library(optparse)
 
 option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.RData'),
                  make_option('--output', type='character', default='Rplots.pdf'),
-                 make_option('--rank', type='character', default='Species')
+                 make_option('--rank', type='character', default='Species'),
+                 make_option('--top', type='numeric', default=12)
                 )
 
 parser <- OptionParser(option_list = option_list)
@@ -29,22 +30,24 @@ colnames(otus) <- taxa_names
 
 dat <- cbind(otus, meta)
 
-dat$month <- as.numeric(format(as.Date(dat$sample_date, '%m/%d/%y'), '%m'))
+dat$sample_date <- as.Date(dat$sample_date, '%m/%d/%y')
 
 dat$season <- 'Winter'
+dat[month(dat$sample_date) %in% 5:9,]$season <- 'Summer'
 
-dat[dat$month %in% 5:9,]$season <- 'Summer'
+top_phy <- sort(tapply(taxa_sums(glom), tax_table(glom)[, options$rank], sum), decreasing=TRUE)[1:options$top]
+form <- parse(text=paste(options$rank, '%in%', 'names(top_phy)'))
+tglom <- subset_taxa(glom, eval(form))
 
-ggplot(dat[dat$age_at_sampling >= 150 & dat$age_at_sampling <= 300,],
-       aes(x=seroconverted,
-           y=dorei.vulgatus,
-           fill=season)) +
-geom_boxplot() +
-scale_y_log10()
+x <- psmelt(tglom)
 
-m <- glm(month ~ dorei.vulgatus*seroconverted, data=dat)
+x$sample_date <- as.Date(x$sample_date, '%m/%d/%y')
 
-anova(m, test='Chisq')
+ggplot(x,
+       aes(x=month(x$sample_date),
+           y=Abundance,
+           color=Species)) +
+    geom_smooth()
 
 # seasonality of appearance of autoantibodies
 
