@@ -6,7 +6,8 @@ option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.
                  make_option('--rank', type='character', default='Phylum'),
                  make_option('--width', type='numeric', default=51),
                  make_option('--output', type='character', default='RPlots.pdf'),
-                 make_option('--top', type='numeric', default=12)
+                 make_option('--top', type='numeric', default=12),
+                 make_option('--test', type='character', default='wilcox')
                 )
 
 source('lib/qvalue.R')
@@ -25,7 +26,6 @@ load(options$input)
 glom <- tax_glom(dipp, taxrank = options$rank)
 
 form <- parse(text=paste(options$rank, '%in%', 'names(top_phy)'))
-
 top_phy <- sort(tapply(taxa_sums(glom), tax_table(glom)[, options$rank], sum), decreasing=TRUE)[1:options$top]
 glom <- subset_taxa(glom, eval(form))
 
@@ -45,12 +45,12 @@ df <- psmelt(glom)
 # sort by age
 df <- df[with(df, order(age_at_sampling)),]
 
-n <- df[,c('age_at_sampling',
-        options$rank,
-        'seroconverted',
-        'dipp_person',
-        'Abundance')]
+# "extra variables"
+vars <- c('vaginal_delivery',
+          'Gender')
 
+# take only what we need
+n <- df[,c(vars, 'seroconverted', 'age_at_sampling', options$rank, 'Abundance', 'dipp_person')]
 
 form <- parse(text=paste('~', options$rank))
 
@@ -62,10 +62,19 @@ smoothed <- ddply(n, eval(form), function(d) {
     downsampled <- ddply(ss, ~ dipp_person, function(y) {
       c(Abundance=median(y$Abundance),
         age_at_sampling=median(y$age_at_sampling),
-        seroconverted=y[1,]$seroconverted)
+        seroconverted=y[1,]$seroconverted,
+        Gender=y[1,]$Gender,
+        vaginal_delivery=y[1,]$vaginal_delivery
+       )
     })
 
-    p.value <- wilcox.test(Abundance ~ seroconverted, data=downsampled, exact=FALSE)$p.value
+    if (options$test == 'wilcox') {
+      p.value <- wilcox.test(Abundance ~ seroconverted, data=downsampled, exact=FALSE)$p.value
+    } else if (options$test == 'glm') {
+      m1 <- glm(Abundance ~ Gender + vaginal_delivery, data=downsampled)
+      m2 <- glm(seroconverted ~ residuals(m1), data=downsampled)
+      p.value <- anova(m2, test='Chisq')[[5]][[2]]
+    }
 
     averaged <- ddply(downsampled, ~ seroconverted, function(y) {
           c(abundance=median(y$Abundance),
