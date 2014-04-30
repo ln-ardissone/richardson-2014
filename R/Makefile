@@ -10,7 +10,7 @@ FDR?='BY'
 WIDTH?=51
 TOP?=12
 
-TESTMETHOD?='wilcox'
+TESTMETHOD?='glm'
 
 default: sliding_window picrust
 	echo 'done!'
@@ -70,7 +70,8 @@ sliding-window-%.pdf: dipp-rf-uniq.RData
 		--output $@ \
 		--input $< \
 		--width $(WIDTH) \
-		--top $(TOP)
+		--top $(TOP) \
+		--test $(TESTMETHOD)
 
 phyloseq: dipp-rf-uniq.RData
 
