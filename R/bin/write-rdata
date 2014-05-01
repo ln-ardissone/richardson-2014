@@ -8,6 +8,8 @@
 
 library(optparse)
 
+first <- function(x) x[1,]
+
 option_list <- c(make_option('--output', type='character', default='/dev/stdout'),
                  make_option('--unique', type='logical', default=FALSE, action='store_true'),
                  make_option('--depth', type='numeric', default=10000),
@@ -37,7 +39,7 @@ dipp
 br()
 
 # remove single autoantibody cases
-dipp <- subset_samples(dipp, aa_count != 1)
+dipp <- subset_samples(dipp, aa_number != 1)
 cat("Removed single autoantibody cases\n")
 dipp
 br()
