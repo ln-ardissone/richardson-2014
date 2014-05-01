@@ -40,5 +40,5 @@ edgeRnorm = function(physeq, ...) {
     # in-place replacement of the OTU table
     otu_table(physeq) <- otu_table(counts, taxa_are_rows=FALSE)
 
-    return(dipp)
+    return(physeq)
 }
