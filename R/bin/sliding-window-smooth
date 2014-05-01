@@ -3,15 +3,15 @@
 library(optparse)
 
 option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.RData'),
-                 make_option('--rank', type='character', default='Phylum'),
+                 make_option('--rank', type='character', default='Species'),
                  make_option('--width', type='numeric', default=51),
                  make_option('--output', type='character', default='RPlots.pdf'),
-                 make_option('--top', type='numeric', default=12),
-                 make_option('--test', type='character', default='wilcox')
+                 make_option('--top', type='numeric', default=4),
+                 make_option('--test', type='character', default='glm')
                 )
 
-source('lib/qvalue.R')
 source('lib/se.R')
+source('lib/ggplot_theme.R')
 
 parser <- OptionParser(option_list = option_list)
 options <- parse_args(parser)
@@ -20,6 +20,10 @@ library(phyloseq)
 library(zoo)
 library(plyr)
 library(ggplot2)
+library(qvalue)
+library(doParallel)
+
+registerDoParallel(cores=4)
 
 load(options$input)
 
@@ -54,10 +58,14 @@ n <- df[,c(vars, 'seroconverted', 'age_at_sampling', options$rank, 'Abundance', 
 
 form <- parse(text=paste('~', options$rank))
 
-smoothed <- ddply(n, eval(form), function(d) {
+smoothed <- ddply(n, eval(form), .parallel=T, function(d) {
   data.frame(rollapply(rownames(d), options$width, function(i) {
     ss <- d[i,] # the slow part! (fixme)
-    print(range(ss$age_at_sampling))
+    r <- range(ss$age_at_sampling)
+    d <- max(ss$age_at_sampling) - min(ss$age_at_sampling)
+    n <- nrow(ss)
+
+    cat('range:', r, 'width:', d, 'count:', n, '\n')
 
     downsampled <- ddply(ss, ~ dipp_person, function(y) {
       c(Abundance=median(y$Abundance),
@@ -74,6 +82,8 @@ smoothed <- ddply(n, eval(form), function(d) {
       m1 <- glm(Abundance ~ Gender + vaginal_delivery, data=downsampled)
       m2 <- glm(seroconverted ~ residuals(m1), data=downsampled)
       p.value <- anova(m2, test='Chisq')[[5]][[2]]
+      ll2 <- logLik(m2)
+      ll1 <- logLik(m1)
     }
 
     averaged <- ddply(downsampled, ~ seroconverted, function(y) {
@@ -82,6 +92,8 @@ smoothed <- ddply(n, eval(form), function(d) {
             age=median(y$age_at_sampling))
     })
     averaged$p.value <- p.value
+    averaged$ll1 <- ll1
+    averaged$ll2 <- ll2
     return(averaged)
   }))
 })
@@ -93,6 +105,8 @@ pdf(options$output, 8, 10, colormodel='cmyk')
 smoothed$seroconverted <- as.factor(smoothed$seroconverted)
 smoothed <- smoothed[complete.cases(smoothed),]
 
+smoothed$q.value <- qvalue(smoothed$p.value)$qvalue
+
 ggplot(smoothed,
        aes_string(x='age',
                   y='abundance',
@@ -102,13 +116,15 @@ facet_grid(seroconverted ~ .)
 
 form <- parse(text=paste('~', options$rank))
 
+
 ggplot(smoothed,
        aes_string(x='age',
            y='abundance',
            fill='seroconverted')) +
 facet_wrap(eval(form), scale='free_y') +
 geom_ribbon(aes(ymin = abundance - abundance.se, ymax= abundance + abundance.se), alpha=0.5) +
-geom_rug(aes(color=p.value < 0.05), sides='b') +
-xlim(min(smoothed$age), 600)
+geom_rug(aes(color=q.value < 0.05), sides='b') +
+xlim(min(smoothed$age), 600) +
+ggplot.theme
 
 dev.off()
