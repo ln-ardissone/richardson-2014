@@ -41,11 +41,13 @@ cases$date_first_sc <- as.Date(cases$date_first_sc, '%m/%d/%y')
 cases$date_second_sc <- as.Date(cases$date_second_sc, '%m/%d/%y')
 cases$date_third_sc <- as.Date(cases$date_third_sc, '%m/%d/%y')
 cases$date_fourth_sc <- as.Date(cases$date_fourth_sc, '%m/%d/%y')
+cases$date_T1D <- as.Date(cases$date_T1D, '%m/%d/%y')
 
 days_until_first_sc <- cases$date_first_sc - cases$DOB
 days_until_second_sc <- cases$date_second_sc - cases$DOB
 days_until_third_sc <- cases$date_third_sc - cases$DOB
 days_until_fourth_sc <- cases$date_fourth_sc - cases$DOB
+days_until_t1d <- t1d$date_T1D - t1d$DOB
 
 cat('- days until 1AA', median(days_until_first_sc, na.rm=T), 'SE =', se(days_until_first_sc), '\n')
 cat('- days until 2AA', median(days_until_second_sc, na.rm=T), 'SE = ', se(days_until_second_sc), '\n')
