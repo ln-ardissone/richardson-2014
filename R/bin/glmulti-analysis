@@ -7,8 +7,10 @@ library(optparse)
 option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.RData'),
                  make_option('--rank', type='character', default='Phylum'),
                  make_option('--top', type='numeric', default=12),
-                 make_option('--min_age', type='numeric', default=0),
-                 make_option('--max_age', type='numeric', default=3000)
+                 make_option('--min_age', type='numeric', default=150),
+                 make_option('--max_age', type='numeric', default=300),
+                 make_option('--level', type='numeric', default=1),
+                 make_option('--output', type='character', default='models.rdata')
                  )
 
 parser <- OptionParser(option_list = option_list)
@@ -16,6 +18,10 @@ options <- parse_args(parser)
 
 library(phyloseq)
 library(plyr)
+library(ggplot2)
+library(glmulti)
+
+source('lib/se.R')
 
 load(options$input)
 
@@ -45,11 +51,8 @@ dat$seroconverted <- meta$seroconverted
 
 # downsample by person id
 downsampled <- ddply(dat, ~ dipp_person +seroconverted, function(x) {
-      colMeans(x[,!colnames(x) %in% c('dipp_person', 'seroconverted')])
+      sapply(x[,!colnames(x) %in% c('dipp_person', 'seroconverted')], median)
 })
-
-
-library(glmulti)
 
 # Run the GLM with the genetic algorithm
 
@@ -60,7 +63,7 @@ g1 <- glmulti(
         xr = XR,              # variables to include in model
         data = downsampled,         # data
         marginality = TRUE,
-        level = 1, 
+        level = options$level, 
         method = "g",
         family = binomial(link = "logit")
         )
@@ -69,27 +72,39 @@ g1 <- glmulti(
 # Create function for running cross-validation
 
 CV <- function(model1, data) {   
-  cv <- NULL  
   values <- matrix(NA, nrow = nrow(data), ncol = 2)
   for (i in 1:nrow(data)) {
     data2 <- data[-i, ]  # leave out one observation 
     model12 <- glm(model1$formula, family =  binomial("logit"), data = data2)       
-    values[i,1] <- round(predict(model12, newdata =  data[i, ] , type="response"))
+    values[i,1] <- round(predict(model12, newdata = data[i, ] , type="response"))
     values[i,2] <- round(as.logical(data$seroconverted[i]))
   }
-  cv <- sum(values[ ,1] == values[ ,2])/nrow(values)
-  return(cv)
+  sum(values[ ,1] == values[ ,2])/nrow(values)
 }
 
 # Run cross-validation for the best 100 models:
 
-cv_scores <- c()
+models <- g1@objects
 
-for (a in 1:100) {
-  f <- glm(g1@objects[[a]]$formula, data=downsampled, family = binomial("logit"))  
+cv_scores <- sapply(1:length(models), function(a) {
+  f <- glm(models[[a]]$formula, data=downsampled, family = binomial("logit"))  
   score <- CV(f, downsampled) 
-  cv_scores <- c(score, cv_scores)
-  cat(paste('model', a, '-', score, '\n'))
-}
+  cat('model', a, '-', score, '\n')
+  score
+})
 
 cat(paste('best score:', max(cv_scores), '\n'))
+
+best <- models[[match(max(cv_scores), cv_scores)]]
+
+print(formula(best))
+
+anova(best, test='Chisq')
+
+top10 <- tail(models[order(cv_scores)], 10)
+
+top10scores <- tail(cv_scores[order(cv_scores)], 10)
+
+cat('median of top 10 scores:', median(top10scores), 'se =',  se(top10scores), '\n')
+
+save(models, file=options$output)
