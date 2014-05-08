@@ -41,6 +41,7 @@ dipp-rf-uniq.RData:
 		--unique \
 		--output $@ \
 		--normalize $(NORMALIZE) \
+		--proportion \
 		--otutable $(OTUTABLE) \
 		--metadata $(METADATA) \
 		--taxonomies $(TAXONOMIES)
