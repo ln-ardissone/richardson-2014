@@ -6,7 +6,7 @@ option_list <- c(make_option('--rdata', default='dipp-rf-uniq.RData'),
                  make_option('--qpcr-data', default='../data/bacteroides-qPCR-25.Nov.2013.csv'),
                  make_option('--target', default='Bacteroides'),
                  make_option('--rank', default='Genus'),
-                 make_option('--output', default='predicted-qpcr.csv')
+                 make_option('--output', default='predicted-bacteroides-copies.csv')
                  )
 
 
@@ -14,11 +14,18 @@ parser <- OptionParser(option_list = option_list)
 options <- parse_args(parser)
 
 library(phyloseq)
+library(ggplot2)
 
 #
 # Load OTU Abundance Data
 #
+
 load(options$rdata)
+
+dorei <- subset_taxa(dipp, Species == 'dorei-vulgatus')
+dorei <- tax_glom(dorei, taxrank='Species')
+dorei <- data.frame(otu_table(dorei))
+colnames(dorei) <- c('dorei-vulgatus')
 
 ss <- subset_taxa(dipp, Genus == "Bacteroides")
 glom <- tax_glom(ss, taxrank=options$rank)
@@ -30,6 +37,8 @@ otus$sample_id <- meta$sample_id
 
 oldname <- colnames(otus)[1]
 colnames(otus)[1] <- 'relative_abundance'
+
+otus$relative_abundance <- round(100000*otus$relative_abundance)
 
 
 #
@@ -45,14 +54,58 @@ qpcr <- read.csv(options$`qpcr-data`)
 dat <- merge(otus, qpcr, by.x='sample_id', by.y='sample')
 
 dat$copies <- as.numeric(as.character(dat$copies))
+dat$copies <- round(100000*dat$copies)
 dat <- dat[complete.cases(dat),]
 
-mod <- glm(as.numeric(as.character(copies)) ~ relative_abundance, data=dat)
+ggplot(dat,
+       aes(x=copies)) +
+geom_density()
 
-otus$predicted_copies <- predict(mod, newdata=otus)
+ggplot(dat,
+       aes(x=relative_abundance,
+           y=copies)) +
+geom_point()
+
+mod <- glm(copies ~ relative_abundance, data=dat)
+
+summary(mod)
+
+dat$predicted <- predict(mod, type='response', family=poisson())
+
+ggplot(dat,
+       aes(x=relative_abundance,
+           y=predicted)) + geom_point()
+
+otus$predicted_copies <- predict(mod, newdata=otus, type="response")
+meta[meta$predicted_copies< 0,]$predicted_copies<- 0
+otus$predicted_dorei <- otus$predicted_copies * dorei[,1]
+
+
+meta$predicted_copies <- otus[rownames(meta),]$predicted_copies
+meta$predicted_dorei <- otus[rownames(meta),]$predicted_dorei
+
+
+ggplot(meta,
+       aes(x=age_at_sampling,
+           y=predicted_dorei,
+           color=seroconverted)) +
+geom_smooth() +
+xlim(100, 600) +
+ylab('predicted Bacteroides * Bacteroides dorei-vulgatus')
 
 new_table <- data.frame(otus[,1])
 rownames(new_table) <- rownames(otus)
 colnames(new_table)[1] <- oldname
+
+dorei <- data.frame(meta$predicted_dorei)
+bacteroides <- data.frame(meta$predicted_copies)
+rownames(dorei) <- rownames(meta)
+rownames(bacteroides) <- rownames(meta)
+
+colnames(dorei) <- c('589277')
+colnames(bacteroides) <- c('71331')
+
+write.csv(dorei, file='dorei.csv')
+write.csv(bacteroides, file='bacteroides.csv')
 
 write.csv(new_table, file=options$output)
