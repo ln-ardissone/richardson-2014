@@ -2,7 +2,7 @@
 
 library(optparse)
 
-option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.RData'),
+option_list <- c(make_option('--input', type='character', default='dipp-qpcr-dorei.RData'),
                  make_option('--output', type='character', default='Rplots.pdf'),
                  make_option('--width', type='numeric', default=201),
                  make_option('--top', type='numeric', default=4),
@@ -187,8 +187,9 @@ sig.scale <- scale_colour_manual(values=sig.colours)
 
 combined$significance <- as.factor(combined$significance)
 
+
 if (options$absolute) {
-  yscale <- scale_y_continuous(labels=scientific)
+  yscale <- scale_y_continuous(breaks=pretty_breaks(50))
   ylab <- ylab('Predicted Copy Number')
 } else {
   yscale <- scale_y_continuous(labels=percent)
@@ -211,6 +212,7 @@ facet_wrap(~variable,
 xlim(100, 800) +
 geom_rug(aes(color=significance), sides='b') +
 ylab +
+yscale +
 ggplot.theme +
 ggplot.pal.scale +
 sig.scale +
