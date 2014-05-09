@@ -10,7 +10,7 @@ NORMALIZE?='edger'
 FDR?='BH'
 WIDTH?=201
 TOP?=4
-BY?=10
+BY?=1
 
 TESTMETHOD?='glm'
 
@@ -69,11 +69,28 @@ dipp-qpcr-%.RData:
 	bin/write-rdata \
 		--unique \
 		--output $@ \
-		--otutable $*.csv \
+		--otutable ../data/$*.csv \
 		--metadata $(METADATA) \
 		--taxonomies $(TAXONOMIES) \
 		--normalize none
 
+sliding-window-qpcr-bacteroides.pdf: dipp-qpcr-bacteroides.RData
+	bin/sliding-window-smooth \
+		--input $< \
+		--output $@ \
+		--rank Genus \
+		--by $(BY) \
+		--absolute \
+		--width $(WIDTH)
+
+sliding-window-qpcr-dorei.pdf: dipp-qpcr-dorei.RData
+	bin/sliding-window-smooth \
+		--input $< \
+		--output $@ \
+		--rank Species \
+		--by $(BY) \
+		--absolute \
+		--width $(WIDTH)
 
 sliding-window-%.pdf: dipp-rf-uniq.RData
 	bin/sliding-window-smooth \
