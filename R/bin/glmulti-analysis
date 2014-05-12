@@ -5,7 +5,7 @@
 library(optparse)
 
 option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.RData'),
-                 make_option('--rank', type='character', default='Genus'),
+                 make_option('--rank', type='character', default='Species'),
                  make_option('--top', type='numeric', default=12),
                  make_option('--min_age', type='numeric', default=150),
                  make_option('--max_age', type='numeric', default=300),
@@ -61,7 +61,7 @@ CV <- function(model1, data) {
   values <- matrix(NA, nrow =nrow(data), ncol = 2)
   for (i in 1:nrow(data)) {
     data2 <- data[-i, ] # leave out one observation
-    model12 <- glm(model1$formula, family =binomial("logit"), data = data2)   
+    model12 <- glm(model1$formula, family =binomial("logit"), data = data2)
     values[i,1] <- round(predict(model12, newdata = data[i, ], type="response"))
     values[i,2] <- round(as.logical(data$seroconverted[i]))
   }

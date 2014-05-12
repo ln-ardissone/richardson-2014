@@ -18,7 +18,7 @@ TESTMETHOD?='glm'
 default: sliding_window picrust
 	echo 'done!'
 
-sliding_window: sliding-window-Phylum.pdf sliding-window-Class.pdf sliding-window-Order.pdf sliding-window-Family.pdf sliding-window-Genus.pdf sliding-window-Species.pdf
+sliding_window: sliding-window-Phylum.pdf sliding-window-Class.pdf sliding-window-Order.pdf sliding-window-Family.pdf sliding-window-Genus.pdf sliding-window-Species.pdf sliding_window_qpcr
 
 sliding-window-diversity.pdf: dipp-for-richness.RData
 	bin/sliding-window-diversity \
@@ -75,6 +75,8 @@ dipp-qpcr-%.RData:
 		--metadata $(METADATA) \
 		--taxonomies $(TAXONOMIES) \
 		--normalize none
+
+sliding_window_qpcr: sliding-window-qpcr-bacteroides.pdf sliding-window-qpcr-dorei.pdf
 
 sliding-window-qpcr-bacteroides.pdf: dipp-qpcr-bacteroides.RData
 	bin/sliding-window-smooth \
