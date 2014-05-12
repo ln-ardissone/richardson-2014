@@ -3,6 +3,7 @@
 OTUTABLE?='../data/dipp-otus.csv.gz'
 METADATA?='../data/dipp-sample_data.csv'
 TAXONOMIES?='../data/dipp-tax_table-merged_bacteroides.csv'
+TREE?='../data/97-otus.tree'
 METAGENOME?='../data/dipp-predicted_metagenome.csv'
 METAGENOME_TAX?='../data/dipp-kegg_orthologies.csv'
 QPCR='../data/dorei-vulgatus-predicted-copies.csv'
@@ -44,7 +45,8 @@ dipp-rf-uniq.RData:
 		--proportion \
 		--otutable $(OTUTABLE) \
 		--metadata $(METADATA) \
-		--taxonomies $(TAXONOMIES)
+		--taxonomies $(TAXONOMIES) \
+		--tree $(TREE)
 
 dipp-for-richness.RData:
 	bin/write-rdata \
