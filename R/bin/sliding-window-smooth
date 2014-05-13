@@ -65,7 +65,7 @@ vars <- c('Gender',
           'dipp_person')
 
 sliding.avg <- lapply(subsets, function(s) {
-  cat("I'm goin'\n")
+  cat(".")
   # get otus and metadata
   otus <- data.frame(otu_table(s), check.names=F)
   meta <- data.frame(sample_data(s))
@@ -126,7 +126,7 @@ sliding.avg <- lapply(subsets, function(s) {
   merged$n.cases <- nrow(otus[otus$seroconverted,])
   merged$n.controls <- nrow(otus[!otus$seroconverted,])
   merged
-})
+}); cat("\n")
 
 combined <- do.call('rbind', sliding.avg)
 combined <- combined[complete.cases(combined),]
