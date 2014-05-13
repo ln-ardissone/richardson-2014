@@ -200,28 +200,36 @@ if (options$absolute) {
 # THE SLIDING WINDOW PLOT
 #
 
-ggplot(combined,
-       aes(x=age_at_sampling,
-           y=abundance,
-           fill=seroconverted)) +
-geom_ribbon(aes(ymin = abundance - abundance.se,
-                ymax = abundance + abundance.se),
-            alpha=0.5) +
-facet_wrap(~variable,
-           scale='free_y') +
-xlim(100, 800) +
-geom_rug(aes(color=significance), sides='b') +
-ylab +
-yscale +
-ggplot.theme +
-ggplot.pal.scale +
-sig.scale +
-xlab('Subject Age (days)') +
-geom_vline(x=479, color='purple', alpha=0.75) +
-geom_vline(x=479-68, linetype='dashed', color='purple', alpha=0.75) +
-geom_vline(x=479+68, linetype='dashed', color='purple', alpha=0.75) +
-ggtitle(options$rank) +
-theme(strip.text=element_text(face='italic'))
+p <- ggplot(combined,
+         aes(x=age_at_sampling,
+             y=abundance,
+             fill=seroconverted)) +
+  geom_ribbon(aes(ymin = abundance - abundance.se,
+                  ymax = abundance + abundance.se),
+              alpha=0.5) +
+  facet_wrap(~variable,
+             scale='free_y') +
+  xlim(100, 800) +
+  geom_rug(aes(color=significance), sides='b') +
+  ylab +
+  yscale +
+  ggplot.theme +
+  ggplot.pal.scale +
+  sig.scale +
+  xlab('Subject Age (days)') +
+  geom_vline(x=479, color='purple', alpha=0.75) +
+  geom_vline(x=479-68, linetype='dashed', color='purple', alpha=0.75) +
+  geom_vline(x=479+68, linetype='dashed', color='purple', alpha=0.75) +
+  ggtitle(options$rank) +
+  theme(strip.text=element_text(face='italic'))
+
+if (options$absolute & options$rank == 'Genus') {
+  p <- p + coord_cartesian(ylim=c(0, 1.5e11))
+} else if (options$absolute & options$rank == 'Species') {
+  p <- p + coord_cartesian(ylim=c(0, 5e10))
+}
+
+p
 
 ggplot(combined,
        aes(x=age_at_sampling,
