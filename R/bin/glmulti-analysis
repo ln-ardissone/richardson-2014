@@ -16,6 +16,23 @@ option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.
 parser <- OptionParser(option_list = option_list)
 options <- parse_args(parser)
 
+extra_vars <- c(
+          'Gender',
+          'vaginal_delivery',
+          'breast_feeding',
+          'DQA_03',
+          'DQA_05',
+          'DQB_02',
+          'DQB_0201',
+          'DQB_0301',
+          'DQB_0302',
+          'DQB_0303',
+          'DQB_0501',
+          'DQB_0604',
+          'seroconverted',
+          'age_at_sampling',
+          'dipp_person')
+
 library(phyloseq)
 library(plyr)
 library(ggplot2)
@@ -56,17 +73,6 @@ XR <- colnames(otus)
 dat$dipp_person <- meta$dipp_person
 dat$seroconverted <- meta$seroconverted
 
-# Create function for running cross-validation
-CV <- function(model1, data) {
-  values <- matrix(NA, nrow =nrow(data), ncol = 2)
-  for (i in 1:nrow(data)) {
-    data2 <- data[-i, ] # leave out one observation
-    model12 <- glm(model1$formula, family =binomial("logit"), data = data2)
-    values[i,1] <- round(predict(model12, newdata = data[i, ], type="response"))
-    values[i,2] <- round(as.logical(data$seroconverted[i]))
-  }
-  sum(values[ ,1] == values[ ,2])/nrow(values)
-}
 
 # downsample by person id
 downsampled <- ddply(dat, ~ dipp_person +seroconverted, function(x) {
