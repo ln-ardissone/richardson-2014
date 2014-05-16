@@ -107,7 +107,7 @@ sliding.avg <- lapply(subsets, function(s) {
 
   pvals <- ddply(downsampled, ~variable, function(x) {
       m1 <- glm(median ~ Gender + vaginal_delivery + breast_feeding + DQA_03 + DQA_05 + DQB_02 + DQB_0201 + DQB_0301 + DQB_0302 + DQB_0303 + DQB_0501 + DQB_0604 , data=x)
-      m2 <- glm(seroconverted ~ residuals(m1), data=x)
+      m2 <- glm(seroconverted ~ residuals(m1), data=x, family=binomial(link='logit'))
       res <- median(residuals(m2, type="deviance"))
       prob <- predict(m2 ,type=c("response"))
       roc_auc <- tryCatch({ roc(seroconverted ~ prob, data = x)$auc },
