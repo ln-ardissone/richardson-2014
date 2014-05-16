@@ -19,6 +19,7 @@ option_list <- c(make_option('--output', type='character', default='/dev/stdout'
                  make_option('--taxonomies', type='character'),
                  make_option('--normalize', type='character', default='none'),
                  make_option('--tree', type='character'),
+                 make_option('--subset', type='character', help='subset expression', default='none'),
                  make_option('--shuffle', default=FALSE, action='store_true', help='randomize case/control assignments'))
 
 parser <- OptionParser(option_list = option_list)
@@ -30,7 +31,7 @@ suppressMessages(suppressWarnings(source('./lib/normalize.R')))
 
 br <- function() cat("\n")
 
-cat("Creating Phyloseq object\n")
+cat("Creating Phyloseq bject\n")
 dipp <- load.dipp(otu.table=options$otutable,
                   sam.data=options$metadata,
                   tax.table=options$taxonomies,
@@ -77,6 +78,16 @@ if (options$unique == TRUE) {
   # put back rownames.
   rownames(uniqued) <- uniqued$illumina_id
   dipp <- phyloseq(sample_data(uniqued), otu_table(dipp), tax_table(dipp))
+}
+
+if (options$subset != 'none') {
+  cat('subsetting samples using expression:', options$subset, '\n')
+  f <- parse(text=options$subset)
+  ss <- subset_samples(dipp, eval(f))
+  cat('after subsetting\n')
+  print(dipp)
+  br()
+  dipp <- ss
 }
 
 cat("After uniquifying by dipp_person\n")
