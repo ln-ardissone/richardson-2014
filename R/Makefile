@@ -11,7 +11,7 @@ NORMALIZE?='edger'
 FDR?='BH'
 WIDTH?=201
 TOP?=4
-BY?=1
+BY?=10
 
 TESTMETHOD?='glm'
 
