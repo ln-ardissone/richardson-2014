@@ -85,6 +85,7 @@ br()
 
 if (options$normalize == 'rarefaction') {
   cat('rarefying\n')
+  dipp <- rarefy_even_depth(dipp, sample.size=options$depth)
 } else if (options$normalize == 'edger') {
   cat('applying edgeR normalization\n')
   dipp <- edgeRnorm(dipp)
