@@ -32,7 +32,6 @@ library(plyr)
 library(ggplot2)
 library(reshape2)
 library(boot)
-library(qvalue)
 library(scales)
 
 load(options$input)
@@ -82,7 +81,6 @@ glms <- ddply(mdat, ~variable, function(m) {
 glms <- glms[complete.cases(glms),]
 
 glms$p.adjust <- p.adjust(glms$V1, method='BH')
-glms$q.value <- qvalue(glms$V1)$qvalues
 
 glms$status <- 'Control'
 glms[mdat.s$response,]$status <- 'Progressor'
