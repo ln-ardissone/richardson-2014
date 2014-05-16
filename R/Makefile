@@ -1,6 +1,6 @@
 # vim: set noexpandtab
 
-OTUTABLE?='../data/dipp-otus_filtered.csv'
+OTUTABLE?='../data/dipp-otus_filtered.csv.gz'
 METADATA?='../data/dipp-sample_data.csv'
 TAXONOMIES?='../data/dipp-tax_table-merged_bacteroides.csv'
 TREE?='../data/97-otus.tree'
@@ -45,8 +45,7 @@ dipp-rf-uniq.RData:
 		--proportion \
 		--otutable $(OTUTABLE) \
 		--metadata $(METADATA) \
-		--taxonomies $(TAXONOMIES) \
-		--tree $(TREE)
+		--taxonomies $(TAXONOMIES)
 
 dipp-for-richness.RData:
 	bin/write-rdata \
