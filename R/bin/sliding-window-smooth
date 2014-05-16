@@ -46,6 +46,12 @@ start_times <- start_times[seq(1, length(start_times), options$by)]
 
 phy <- top
 
+cat("Looking at top",
+    options$top,
+    "taxa or",
+    100 * sum(rowSums(phy@otu_table)) / sum(rowSums(glom@otu_table)),
+    "% of the total community (by reads)\n")
+
 subsets <- generate_subsets(phy, start_times, options$width)
 
 vars <- c('Gender',
