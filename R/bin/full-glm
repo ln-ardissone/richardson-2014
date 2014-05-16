@@ -18,11 +18,14 @@ vars <- c('Gender',
 option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.RData'),
                  make_option('--rank', type='character', default='Species'),
                  make_option('--output', type='character', default='models.rdata'),
-                 make_option('--bootstrap', default=F, action='store_true')
+                 make_option('--bootstrap', default=F, action='store_true'),
+                 make_option('--pdf', default='Rplots.pdf')
                  )
 
 parser <- OptionParser(option_list = option_list)
 options <- parse_args(parser)
+
+pdf(options$pdf)
 
 library(phyloseq)
 library(plyr)
@@ -46,6 +49,8 @@ otus$age <- meta$age_at_sampling
 otus$subject <- meta$dipp_person
 
 # add extra variables
+vars <- vars[vars %in% colnames(meta)]
+
 for (v in vars) otus[,v] <- meta[,v]
 
 mdat <- melt(otus, c('response', 'age', 'subject', vars))
@@ -74,27 +79,39 @@ glms <- ddply(mdat, ~variable, function(m) {
   }
 })
 
+glms <- glms[complete.cases(glms),]
+
 glms$p.adjust <- p.adjust(glms$V1, method='BH')
 glms$q.value <- qvalue(glms$V1)$qvalues
 
-significant <- subset(glms, p.adjust < 0.001)
+glms$status <- 'Control'
+glms[mdat.s$response,]$status <- 'Progressor'
 
-mdat.s <- subset(mdat, variable %in% significant$variable)
+for (alpha in c(0.05, 0.01, 0.001)) {
 
-mdat.s$status <- 'Control'
-mdat.s[mdat.s$response,]$status <- 'Progressor'
+  significant <- subset(glms, p.adjust < 0.05)
 
-ggplot(mdat.s,
-       aes(x=age,
-           y=value,
-           color=status,
-           linetype=status)) +
-geom_smooth(alpha=0.30) +
-facet_grid(.~variable, scale='free_y') +
-xlim(100, 600) +
-scale_y_continuous(labels=percent) +
-ggplot.theme +
-scale_color_manual(values=c("#999999",
-                           "#FFAB00"))
+  print(significant)
 
-form <- as.formula(paste('response ~', paste(paste(significant$variable, ':age', sep=""), collapse=' + ')))
+  mdat.s <- subset(mdat, variable %in% significant$variable)
+
+  source('lib/ggplot_theme.R')
+
+  ggplot(mdat.s,
+         aes(x=age,
+             y=value,
+             color=status,
+             linetype=status)) +
+  geom_smooth(alpha=0.30) +
+  facet_wrap(~variable, scale='free_y') +
+  xlim(100, 600) +
+  scale_y_continuous(labels=percent) +
+  ggplot.theme +
+  scale_color_manual(values=c("#999999",
+                             "#FFAB00")) +
+  ggtitle(paste('alpha =', alpha))
+
+}
+
+
+dev.off()
