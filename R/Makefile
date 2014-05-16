@@ -1,6 +1,6 @@
 # vim: set noexpandtab
 
-OTUTABLE?='../data/dipp-otus.csv.gz'
+OTUTABLE?='../data/dipp-otus_filtered.csv'
 METADATA?='../data/dipp-sample_data.csv'
 TAXONOMIES?='../data/dipp-tax_table-merged_bacteroides.csv'
 TREE?='../data/97-otus.tree'
