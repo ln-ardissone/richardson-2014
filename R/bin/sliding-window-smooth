@@ -32,11 +32,11 @@ glom <- tax_glom(dipp, taxrank=options$rank)
 
 glom
 
+cat('Using top', options$top, 'taxa\n')
 top_phy <- sort(tapply(taxa_sums(glom), tax_table(glom)[, options$rank], sum), decreasing=TRUE)[1:options$top]
 form <- parse(text=paste(options$rank, '%in%', 'names(top_phy)'))
 top <- subset_taxa(glom, eval(form))
 
-cat("Looking at top", options$top, "taxa or", 100 * sum(rowSums(top@otu_table)) / sum(rowSums(glom@otu_table)), "% of the total community (by reads)\n")
 
 first <- min(sample_data(glom)$age_at_sampling)
 last <- max(sample_data(glom)$age_at_sampling)
