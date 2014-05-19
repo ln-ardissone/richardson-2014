@@ -112,10 +112,9 @@ sliding.avg <- lapply(subsets, function(s) {
       prob <- predict(m2 ,type=c("response"))
       roc_auc <- tryCatch({ roc(seroconverted ~ prob, data = x)$auc },
                error = function(e) { NA })
-      c(p.value=anova(m2, test='Chisq')[[5]][[2]], res=res,auc=roc_auc)
+      mw <- tryCatch({wilcox.test(median ~ seroconverted,data = x, exact = F)$p.value}, error = function(x) { return(1) })
+      c(p.value=anova(m2, test='Chisq')[[5]][[2]], res=res,auc=roc_auc, p.wilcox = mw)
   })
-
-  # TODO correct for multiple hypothesis testing
 
   averaged <- ddply(downsampled, ~variable+seroconverted, function(x) {
      c(abundance=median(x$median),
