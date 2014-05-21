@@ -1,12 +1,13 @@
 # vim: set noexpandtab
 
-OTUTABLE?='../data/dipp-otus_filtered.csv.gz'
+OTUTABLE?='../data/dipp-otus_filtered.csv'
 METADATA?='../data/dipp-sample_data.csv'
 TAXONOMIES?='../data/dipp-tax_table-merged_bacteroides.csv'
 TREE?='../data/97-otus.tree'
 METAGENOME?='../data/dipp-predicted_metagenome.csv'
 METAGENOME_TAX?='../data/dipp-kegg_orthologies.csv'
 QPCR='../data/dorei-vulgatus-predicted-copies.csv'
+PHYLOSEQ='dipp-rf-uniq.RData'
 NORMALIZE?='edger'
 FDR?='BH'
 WIDTH?=201
@@ -29,6 +30,21 @@ sliding-window-diversity.pdf: dipp-for-richness.RData
 
 boxplots: boxplot-Phylum.pdf boxplot-Class.pdf boxplot-Order.pdf boxplot-Family.pdf boxplot-Genus.pdf boxplot-Species.pdf
 
+mw-all-%.pdf: dipp-rf-uniq.RData
+	bin/all-sample-mw-test \
+		--input $< \
+		--pdf $@ \
+		--table-out mw-all-$*.csv
+
+glm-%.pdf: dipp-rf-uniq.RData
+	bin/full-glm \
+		--input $< \
+		--output "$@".csv \
+		--pdf $@ \
+		--rank $* \
+		--table glm-$*.csv \
+		--bootstrap
+
 boxplot-%.pdf: dipp-rf-uniq.RData
 	bin/boxplots \
 		--start 300 \
@@ -36,6 +52,17 @@ boxplot-%.pdf: dipp-rf-uniq.RData
 		--rank $* \
 		--output $@ \
 		--input $<
+
+dipp-rf-uniq-site-%.RData:
+	bin/write-rdata \
+		--unique \
+		--output $@ \
+		--normalize $(NORMALIZE) \
+		--proportion \
+		--otutable $(OTUTABLE) \
+		--metadata $(METADATA) \
+		--taxonomies $(TAXONOMIES) \
+		--subset 'site == "$*"'
 
 dipp-rf-uniq.RData:
 	bin/write-rdata \
