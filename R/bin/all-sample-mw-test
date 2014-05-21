@@ -43,14 +43,19 @@ otus$subject <- meta$dipp_person
 
 mdat <- melt(otus, c('response', 'subject'))
 
-do_test <- function(x, ind) {
+do_test <- function(x, ind, ...) {
   wilcox.test(value ~ response, data=x[ind,])$p.value
 }
 
 tests <- ddply(mdat, ~variable, function(x) {
+  cat('.')
   # bootstrap p-values
-  b <- boot(x, do_test, R=999, parallel='multicore', ncpus=4)
-  print(boot.ci(b))
+  f <- data.frame(table(x$subject))
+  colnames(f) <- c('subject', 'frequency')
+  x <- merge(x, f, id.x='subject', id.y='subject')
+  x$weight <- 1/x$frequency
+  b <- boot(x, do_test, R=100, sim='balanced', weigths=x$weight)
+#  print(boot.ci(b))
   c(p.value=b$t0)
 });
 
