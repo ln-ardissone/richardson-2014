@@ -1,0 +1,93 @@
+#!/usr/bin/env Rscript
+
+library(optparse)
+
+option_list <- c(make_option('--input', default='dipp-rf-uniq.RData'),
+                 make_option('--rank', default='Genus'),
+                 make_option('--fdr', default='BH'),
+                 make_option('--table-out', default='/dev/stdout'),
+                 make_option('--pdf', default='Rplots.pdf')
+                )
+
+parser <- OptionParser(option_list = option_list)
+options <- parse_args(parser)
+
+pdf(options$output)
+
+source('lib/se.R')
+source('lib/ggplot_theme.R')
+
+library(phyloseq)
+library(reshape2)
+library(ggplot2)
+library(plyr)
+library(boot)
+
+load(options$input)
+
+glom <- tax_glom(dipp, taxrank = options$rank)
+
+otus <- data.frame(otu_table(glom), check.names=F)
+meta <- data.frame(sample_data(glom))
+
+taxa_names <- data.frame(tax_table(glom))
+if (options$rank == 'Species') {
+  taxa_names <- paste(taxa_names$Genus, taxa_names$Species)
+} else {
+  taxa_names <- taxa_names[,options$rank]
+}
+colnames(otus) <- taxa_names
+
+otus$response <- meta$seroconverted
+otus$subject <- meta$dipp_person
+
+mdat <- melt(otus, c('response', 'subject'))
+
+do_test <- function(x, ind) {
+  wilcox.test(value ~ response, data=x[ind,])$p.value
+}
+
+tests <- ddply(mdat, ~variable, function(x) {
+  # bootstrap p-values
+  b <- boot(x, do_test, R=999, parallel='multicore', ncpus=4)
+  print(boot.ci(b))
+  c(p.value=b$t0)
+});
+
+tests$p.adjusted <- p.adjust(tests$p.value,options$fdr)
+tests$significant <- tests$p.adjusted < 0.001
+
+cat(nrow(tests[tests$significant,]), 'taxa passed FDR at p < 0.001\n')
+
+averaged <- ddply(mdat, ~variable+response, function(x) {
+  c(median=median(x$value), se=se(x$value))
+})
+
+merged <- merge(averaged, tests)
+
+significant <- merged[merged$significant,]
+
+ggplot(significant,
+       aes(x='x',
+           y=median,
+           fill=response)) +
+geom_bar(stat='identity', position='dodge') +
+ggplot.theme +
+xlab(options$rank) +
+facet_wrap(~variable, scale='free_y')
+
+# calculate higher in controls or higher in cases?
+with_ratios <- ddply(merged, ~ variable, function(x) {
+ c(greater_in=if (x[x$response,]$median[1] > x[!x$response,]$median[1]) {
+   'Progressors'
+ } else {
+   'Controls'
+ },
+ ratio=x[x$response,]$median[1]/x[!x$response,]$median[1])
+})
+
+merged <- merge(merged, with_ratios)
+
+write.csv(merged, file=options$`table-out`)
+
+dev.off()
