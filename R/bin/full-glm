@@ -18,8 +18,11 @@ vars <- c('Gender',
 option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.RData'),
                  make_option('--rank', type='character', default='Species'),
                  make_option('--output', type='character', default='models.rdata'),
-                 make_option('--bootstrap', default=F, action='store_true'),
-                 make_option('--pdf', default='Rplots.pdf')
+                 make_option('--bootstrap', default=T, action='store_true'),
+                 make_option('--pdf', default='Rplots.pdf'),
+                 make_option('--table', default='glms.csv'),
+                 make_option('--subset', default='none'),
+                 make_option('--absolute', default=F, action='store_true')
                  )
 
 parser <- OptionParser(option_list = option_list)
@@ -35,10 +38,24 @@ library(boot)
 library(scales)
 
 load(options$input)
+cat('Agglomerating... get some coffee\n')
 dipp <- tax_glom(dipp, taxrank=options$rank)
 
-taxa_names <- data.frame(tax_table(dipp))[,options$rank]
+if (options$subset != 'none') {
+  form <- parse(text=options$subset)
+  dipp <- subset_samples(dipp, eval(form))
+}
+
 otus <- data.frame(otu_table(dipp), check.names=F)
+
+taxa_names <- data.frame(tax_table(dipp))
+
+if (options$rank == 'Species') {
+  taxa_names <- paste(taxa_names$Genus, taxa_names$Species)
+} else {
+  taxa_names <- taxa_names[,options$rank]
+}
+
 colnames(otus) <- taxa_names
 
 meta <- data.frame(sample_data(dipp))
@@ -62,19 +79,31 @@ get_coeff <- function(dat) {
   coef(mod0)
 }
 
-do_test <- function(dat) {
+do_fit <- function(dat) {
   mod0 <- glm(f1, data=dat)
   dat$r <- residuals(mod0)
-  mod1 <- glm(f2, data=dat)
+  glm(f2, data=dat, family=binomial(link='logit'))
+}
+
+do_test <- function(dat, i) {
+  mod1 <- do_fit(dat[i,])
   anova(mod1, test='Chisq')[[5]][[2]]
 }
+
+missing <- mdat[!complete.cases(mdat),]
+
+cat('Removing', nrow(missing), 'incomplete rows\n')
+
+mdat <- mdat[complete.cases(mdat),]
 
 glms <- ddply(mdat, ~variable, function(m) {
   cat('variable:', m$variable[1], '\n') 
   if (options$bootstrap) {
-    boot(m, do_test, R=10, sim='parametric')$t0
+    b <- boot(m, do_test, R=999, parallel='multicore', ncpus=4)
+    print(boot.ci(b)) # make sure we did enough bootstraps
+    b$t0
   } else {
-    do_test(m)
+    do_test(m, rownames(m))
   }
 })
 
@@ -82,35 +111,62 @@ glms <- glms[complete.cases(glms),]
 
 glms$p.adjust <- p.adjust(glms$V1, method='BH')
 
+nrow(glms[glms$p.adjust < 0.001,])
+nrow(glms[glms$p.adjust < 0.01,])
+nrow(glms[glms$p.adjust < 0.05,])
+
 mdat$status <- 'Control'
 mdat[mdat$response,]$status <- 'Progressor'
 
-for (alpha in c(0.05, 0.01, 0.001)) {
+source('lib/ggplot_theme.R')
 
+ycoords <-
+  if (options$absolute & options$rank == 'Genus') {
+    coord_cartesian(ylim=c(0, 1.5e11))
+  } else if (options$absolute & options$rank == 'Species') {
+     coord_cartesian(ylim=c(0, 5e10))
+  }
+
+ystuff <-
+  if (options$absolute) {
+    yscale <- scale_y_continuous(breaks=pretty_breaks(50))
+    ylab <- ylab('Predicted Copy Number')
+  } else {
+    yscale <- scale_y_continuous(labels=percent)
+    ylab <- ylab('Relative Abundance')
+  }
+
+plot_results <- function(alpha) {
   significant <- subset(glms, p.adjust < alpha)
-
-  print(significant)
-
   mdat.s <- subset(mdat, variable %in% significant$variable)
-
-  source('lib/ggplot_theme.R')
-
   p<-ggplot(mdat.s,
          aes(x=age,
              y=value,
-             color=status,
+             fill=status, color=status,
              linetype=status)) +
-  geom_smooth(alpha=0.30) +
+  geom_smooth(alpha=0.30,size=1) +
   facet_wrap(~variable, scale='free_y') +
-  xlim(100, 600) +
-  scale_y_continuous(labels=percent) +
+  xlim(100, 800) +
+  scale_y_continuous(labels=scientific) +
   ggplot.theme +
   scale_color_manual(values=c("#999999",
                              "#FFAB00")) +
-  ggtitle(paste('alpha =', alpha))
-
+  scale_fill_manual(values=c("#999999",
+                             "#FFAB00")) +
+  ggtitle(paste('alpha =', alpha)) +
+  geom_vline(x=479, color='purple', alpha=0.75) +
+  geom_vline(x=479-68, linetype='dashed', color='purple', alpha=0.75) +
+  geom_vline(x=479+68, linetype='dashed', color='purple', alpha=0.75) +
+  ycoords +
+  ystuff +
+  yscale
   print(p)
+}
 
+for (alpha in c(1, 0.05, 0.01, 0.001)) {
+  tryCatch({
+    plot_results(alpha)
+  }, error = function(e) { warning(e) })
 }
 
 dev.off()
