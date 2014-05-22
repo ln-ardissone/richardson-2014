@@ -1,12 +1,14 @@
 #!/usr/bin/env Rscript
 
 library(optparse)
+library(perm)
 
 option_list <- c(make_option('--input', default='dipp-rf-uniq.RData'),
-                 make_option('--rank', default='Genus'),
+                 make_option('--rank', default='Species'),
                  make_option('--fdr', default='BH'),
                  make_option('--table-out', default='/dev/stdout'),
-                 make_option('--pdf', default='Rplots.pdf')
+                 make_option('--pdf', default='Rplots.pdf'),
+                 make_option('--bootstrap', default=T, action='store_true')
                 )
 
 parser <- OptionParser(option_list = option_list)
@@ -44,42 +46,72 @@ otus$subject <- meta$dipp_person
 mdat <- melt(otus, c('response', 'subject'))
 
 do_test <- function(x, ind, ...) {
-  wilcox.test(value ~ response, data=x[ind,])$p.value
+#  wilcox.test(value ~ response, data=x[ind,])$p.value
+  permTS(value ~ response, data=x[ind,])$p.value
 }
+
 
 tests <- ddply(mdat, ~variable, function(x) {
   cat('.')
-  # bootstrap p-values
+  if (options$bootstrap == T) {
+    # bootstrap p-values
+    f <- data.frame(table(x$subject))
+    colnames(f) <- c('subject', 'frequency')
+    x <- merge(x, f, id.x='subject', id.y='subject')
+    x$weight <- 1/x$frequency
+    b <- boot(x, do_test, R=100, sim='balanced', weigths=x$weight)
+  #  print(boot.ci(b))
+    c(p.value=b$t0)
+  } else {
+    c(p.value=do_test(x, rownames(x)))
+  }
+});
+
+stats <- ddply(mdat, ~ variable + response, function(x) {
   f <- data.frame(table(x$subject))
   colnames(f) <- c('subject', 'frequency')
   x <- merge(x, f, id.x='subject', id.y='subject')
   x$weight <- 1/x$frequency
-  b <- boot(x, do_test, R=100, sim='balanced', weigths=x$weight)
-#  print(boot.ci(b))
-  c(p.value=b$t0)
-});
+ c(median=boot(x$value, median, R=10, sim='balanced', weights=x$weight)$t0,
+   sd=boot(x$value, sd, R=10, sim='balanced', weights=x$weight)$t0)
+})
 
-tests$p.adjusted <- p.adjust(tests$p.value,options$fdr)
+stats$se <- stats$sd/sqrt(length(unique(mdat$subject)))
+
+tests$p.adjusted <- p.adjust(tests$p.value, options$fdr)
 tests$significant <- tests$p.adjusted < 0.001
+
+# plot distribution of p and adjusted p-values
+ggplot(tests, aes(x=p.value)) + geom_density() + geom_density(data=tests, aes(x=p.adjusted), color='red') + ggplot.theme
 
 cat(nrow(tests[tests$significant,]), 'taxa passed FDR at p < 0.001\n')
 
-averaged <- ddply(mdat, ~variable+response, function(x) {
-  c(median=median(x$value), se=se(x$value))
-})
-
-merged <- merge(averaged, tests)
+merged <- merge(stats, tests)
 
 significant <- merged[merged$significant,]
+
+dodge <- position_dodge(width=0.9)
 
 ggplot(significant,
        aes(x='x',
            y=median,
            fill=response)) +
-geom_bar(stat='identity', position='dodge') +
-ggplot.theme +
+geom_bar(stat='identity', position=dodge) +
 xlab(options$rank) +
-facet_wrap(~variable, scale='free_y')
+facet_wrap(~variable, scale='free_y') +
+geom_errorbar(aes(ymin = median - se, ymax = median + se), position=dodge, width=0.25) +
+ggplot.theme +
+ggplot.pal.scale
+
+ggplot(mdat[mdat$variable %in% significant$variable,],
+       aes(x=response,
+           y=value,
+           fill=response)) +
+facet_wrap(~variable, scale='free_y') +
+geom_boxplot() +
+scale_y_log10() +
+ggplot.theme +
+ggplot.pal.scale
 
 # calculate higher in controls or higher in cases?
 with_ratios <- ddply(merged, ~ variable, function(x) {
