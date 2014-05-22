@@ -43,11 +43,15 @@ x <- psmelt(tglom)
 
 x$sample_date <- as.Date(x$sample_date, '%m/%d/%y')
 
+# monthly relative abundance
+
 ggplot(x,
        aes(x=month(x$sample_date),
            y=Abundance,
-           color=Species)) +
-    geom_smooth()
+           color=seroconverted)) +
+    geom_smooth() +
+    coord_polar("x") +
+    facet_wrap(~Species)
 
 # seasonality of appearance of autoantibodies
 
