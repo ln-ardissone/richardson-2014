@@ -42,6 +42,8 @@ load(options$input)
 cat('Agglomerating... get some coffee\n')
 dipp <- tax_glom(dipp, taxrank=options$rank)
 
+dipp <- subset_samples(dipp, days_until_1AA > 0)
+
 if (options$subset != 'none') {
   form <- parse(text=options$subset)
   dipp <- subset_samples(dipp, eval(form))
@@ -73,7 +75,7 @@ for (v in vars) otus[,v] <- meta[,v]
 mdat <- melt(otus, c('response', 'age', 'subject', vars))
 
 f1 <- as.formula(paste('value ~', paste(paste(vars, ':age', sep=''), collapse='+')))
-f2 <- response ~ r:age
+f2 <- response ~ value:age
 
 get_coeff <- function(dat) {
   mod0 <- glm(f1, data=dat)

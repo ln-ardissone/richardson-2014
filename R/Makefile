@@ -36,14 +36,15 @@ mw-all-%.pdf: dipp-rf-uniq.RData
 		--pdf $@ \
 		--table-out mw-all-$*.csv
 
+glms: glm-Phylum.pdf glm-Genus.pdf glm-Species.pdf
+
 glm-%.pdf: dipp-rf-uniq.RData
 	bin/full-glm \
 		--input $< \
 		--output "$@".csv \
 		--pdf $@ \
 		--rank $* \
-		--table glm-$*.csv \
-		--bootstrap
+		--table glm-$*.csv
 
 boxplot-%.pdf: dipp-rf-uniq.RData
 	bin/boxplots \

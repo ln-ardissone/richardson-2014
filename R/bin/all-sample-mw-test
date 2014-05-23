@@ -109,7 +109,6 @@ ggplot(mdat[mdat$variable %in% significant$variable,],
            fill=response)) +
 facet_wrap(~variable, scale='free_y') +
 geom_boxplot() +
-scale_y_log10() +
 ggplot.theme +
 ggplot.pal.scale
 
