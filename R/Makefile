@@ -30,10 +30,13 @@ sliding-window-diversity.pdf: dipp-for-richness.RData
 
 boxplots: boxplot-Phylum.pdf boxplot-Class.pdf boxplot-Order.pdf boxplot-Family.pdf boxplot-Genus.pdf boxplot-Species.pdf
 
+mw-all: mw-all-Phylum.pdf mw-all-Genus.pdf mw-all-Species.pdf
+
 mw-all-%.pdf: dipp-rf-uniq.RData
 	bin/all-sample-mw-test \
 		--input $< \
 		--pdf $@ \
+		--rank $* \
 		--table-out mw-all-$*.csv
 
 glms: glm-Phylum.pdf glm-Genus.pdf glm-Species.pdf
