@@ -20,6 +20,7 @@ library(plyr)
 library(scales)
 library(reshape2)
 library(pROC)
+library(perm)
 
 source('lib/sliding_window.R')
 source('lib/ggplot_theme.R')
@@ -113,7 +114,9 @@ sliding.avg <- lapply(subsets, function(s) {
       roc_auc <- tryCatch({ roc(seroconverted ~ prob, data = x)$auc },
                error = function(e) { NA })
       mw <- tryCatch({wilcox.test(median ~ seroconverted,data = x, exact = F)$p.value}, error = function(x) { return(1) })
-      c(p.value=anova(m2, test='Chisq')[[5]][[2]], res=res,auc=roc_auc, p.wilcox = mw)
+      perm <- tryCatch({permTS(median ~ seroconverted,data = x)$p.value}, error = function(x) { return(1) })
+      predicted <- as.logical(round(prob))
+      c(p.value=anova(m2, test='Chisq')[[5]][[2]], res=res,auc=roc_auc, p.wilcox = mw, p.perm=perm)
   })
 
   averaged <- ddply(downsampled, ~variable+seroconverted, function(x) {
@@ -127,7 +130,7 @@ sliding.avg <- lapply(subsets, function(s) {
 
   merged$width <- max(otus$age_at_sampling) - min(otus$age_at_sampling)
   merged$n <- nrow(otus)
-  merged$p.adjusted <- p.adjust(merged$p.value, options$fdr)
+  merged$p.adjusted <- p.adjust(merged$p.perm, options$fdr)
   merged$n.cases <- nrow(otus[otus$seroconverted,])
   merged$n.controls <- nrow(otus[!otus$seroconverted,])
   merged
