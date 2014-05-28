@@ -21,11 +21,12 @@ option_list <- c(make_option('--input', type='character', default='dipp-rf-uniq.
                  make_option('--output', type='character', default='models.rdata'),
                  make_option('--bootstrap', default=F, action='store_true'),
                  make_option('--pdf', default='Rplots.pdf'),
-                 make_option('--table', default='glms.csv'),
+                 make_option('--out-table', default='glms.csv'),
                  make_option('--subset', default='none'),
                  make_option('--absolute', default=F, action='store_true'),
                  make_option('--cores', default=24),
-                 make_option('--response', default='seroconverted')
+                 make_option('--response', default='seroconverted'),
+                 make_option('--min-abund', default=0.01)
                  )
 
 parser <- OptionParser(option_list = option_list)
@@ -153,9 +154,17 @@ ystuff <-
     ylab <- ylab('Relative Abundance')
   }
 
-plot_results <- function(alpha) {
+plot_results <- function(alpha, min=0) {
+  cat('alpha =', alpha, '\n')
+  cat('min =', min, '\n')
   significant <- subset(glms, p.adjust < alpha)
   mdat.s <- subset(mdat, variable %in% significant$variable)
+  cat(nrow(mdat.s), '\n')
+  top <- ddply(mdat.s, ~variable, function(x) median(x$value) > min)
+  top <- top[top$V1,]
+  mdat.s <- subset(mdat.s, variable %in% top$variable)
+  mdat.s$variable <- factor(mdat.s$variable, levels=unique(mdat.s[with(mdat.s, order(-value)),]$variable))
+  cat(nrow(mdat.s), '\n')
   p<-ggplot(mdat.s,
          aes(x=age,
              y=value,
@@ -170,21 +179,23 @@ plot_results <- function(alpha) {
                              "#FFAB00")) +
   scale_fill_manual(values=c("#999999",
                              "#FFAB00")) +
-  ggtitle(paste('alpha =', alpha)) +
+  ggtitle(paste(options$rank, ' (alpha = ', alpha, ')', sep='')) +
   geom_vline(x=479, color='purple', alpha=0.75) +
   geom_vline(x=479-68, linetype='dashed', color='purple', alpha=0.75) +
   geom_vline(x=479+68, linetype='dashed', color='purple', alpha=0.75) +
   ycoords +
   ystuff +
-  yscale
+  yscale +
+  xlab('Age (days)')
   print(p)
 }
 
 for (alpha in c(1, 0.05, 0.01, 0.001)) {
   tryCatch({
-    plot_results(alpha)
-  }, error = function(e) { warning(e) }
-  )
+    plot_results(alpha, min=options$`min-abund`)
+  }, error = function(e) { warning(e) })
 }
+
+write.csv(glms, file=options$`out-table`)
 
 dev.off()
