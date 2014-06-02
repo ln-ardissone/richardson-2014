@@ -41,6 +41,10 @@ mw-all-%.pdf: dipp-rf-uniq.RData
 
 glms: glm-Phylum.pdf glm-Genus.pdf glm-Species.pdf
 
+autoimmunity-timing.pdf:
+	bin/autoimmunity-timing
+	mv Rplots autoimmunity-timing.pdf
+
 glm-%.pdf: dipp-rf-uniq.RData
 	bin/full-glm \
 		--input $< \
