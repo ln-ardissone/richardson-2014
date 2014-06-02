@@ -51,7 +51,7 @@ glm-%.pdf: dipp-rf-uniq.RData
 		--output "$@".csv \
 		--pdf $@ \
 		--rank $* \
-		--table glm-$*.csv
+		--out-table glm-$*.csv
 
 boxplot-%.pdf: dipp-rf-uniq.RData
 	bin/boxplots \
