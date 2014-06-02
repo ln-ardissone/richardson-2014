@@ -1,0 +1,84 @@
+#!/usr/bin/env Rscript
+
+# What I want to plot:
+#
+# - Growing window time series of the % of cases
+# who have seroconverted.
+#
+# - Lines for the appearance of each autoantibody
+# with confidence intervals (not tall).
+#
+
+source('lib/se.R')
+source('lib/ggplot_theme.R')
+
+library(scales)
+library(ggplot2)
+library(plyr)
+library(reshape2)
+library(phyloseq)
+
+
+# load sample data.
+
+load('dipp-rf-uniq.RData')
+dat <- data.frame(sample_data(dipp))
+
+# calculate stats for prediction results.
+window <- dat[dat$age_at_sampling > 150 & dat$age_at_sampling < 300,]
+averaged <- ddply(window, ~seroconverted+dipp_person, function(x) c(seroconverted=x[1]$serconverted, median=median(x$age_at_sampling)))
+averaged.median <- median(averaged$median)
+averaged.se <- se(averaged$median)
+
+
+cases <- dat[complete.cases(dat$days_until_2AA) & dat$seroconverted,]
+ftp <- cases[cases$sample_number == 1,]
+
+ftp <- ftp[!duplicated(ftp[,'dipp_person']),]
+
+t0 <- 0
+tn <- max(ftp$days_until_1AA) + 100
+
+total_cases <- length(unique(ftp$dipp_person))
+
+# calculate proportion of cases who have seroconverted
+# in a growing window across age at sampling.
+
+proportions <- lapply(t0:tn, function(d) {
+  seroconverted <- ftp[(ftp$days_until_1AA + ftp$age_at_sampling )< d,]
+  count <- length(unique(seroconverted$dipp_person))
+  cat(paste(d, ' - ', count, '\n'))
+  c(count=count, days=d)
+})
+
+prop_df <- data.frame(do.call('rbind', proportions))
+
+# calculate avg. age of appearance of each autoantibody.
+
+aa.df <- data.frame(AA1   = median(ftp$days_until_1AA + ftp$age_at_sampling),
+                    AA1SE = se(ftp$days_until_1AA + ftp$age_at_sampling),
+                    AA2   = median(ftp$days_until_2AA + ftp$age_at_sampling),
+                    AA2SE = se(ftp$days_until_2AA + ftp$age_at_sampling),
+                    AA3   = median(ftp$days_until_3AA + ftp$age_at_sampling, na.rm=T),
+                    AA3SE = se(ftp$days_until_3AA + ftp$age_at_sampling),
+                    AA4   = median(ftp$days_until_4AA + ftp$age_at_sampling, na.rm=T),
+                    AA4SE = se(ftp$days_until_4AA + ftp$age_at_sampling),
+                    T1D   = median(ftp$days_until_T1D + ftp$age_at_sampling, na.rm=T))
+
+ggplot(prop_df,
+       aes(x=days,
+           ymax=count/total_cases, ymin=-1)
+       ) +
+      geom_ribbon(alpha=0.5, fill="#FFAB00") +
+      scale_y_continuous(labels=percent) +
+      geom_vline(x=aa.df$AA1, color='purple') +
+      geom_vline(x=aa.df$AA1 + aa.df$AA1SE, linetype='dashed', color='purple') +
+      geom_vline(x=aa.df$AA1 - aa.df$AA1SE, linetype='dashed', color='purple') +
+      geom_vline(x=220+3, color='blue', linetype='dashed') +
+      geom_vline(x=220, color='blue', linetype='solid') +
+      geom_vline(x=220-3, color='blue', linetype='dashed') +
+      ylab('Autoimmune') +
+      xlab('Age (Days)') +
+      coord_cartesian(ylim=c(0, 1), xlim=c(100, 600)) +
+      ggtitle('Prediction of Autoimmunity') +
+      ggplot.theme
