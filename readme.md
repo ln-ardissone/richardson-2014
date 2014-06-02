@@ -29,7 +29,7 @@ This I had to do manually
 
 ### Figure 4 - Prediction figure
 
-`make prediction`
+`make autoimmunity-timing.pdf`
 
 ## License
 
