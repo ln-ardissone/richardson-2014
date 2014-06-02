@@ -8,6 +8,29 @@ After cloning this repo, download the data:
 
 `make`
 
+## Instructions for generating figures
+
+All figures require an RData file which contains the OTU abundance data as well
+as sample metadata. This file is created using the script `bin/write-rdata`. To
+generate the RData used in this work, run the command `make dipp-rf-uniq.RData`
+from the `R/` directory.
+
+### Figure 1 - LOESS regression of significant OTUs
+
+`make glms`
+
+### Figure 2 - Sliding window
+
+`make sliding_window`
+
+### Figure 3 - Phylogenetic tree
+
+This I had to do manually
+
+### Figure 4 - Prediction figure
+
+`make prediction`
+
 ## License
 
 The MIT License (MIT)
